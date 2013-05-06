@@ -58,7 +58,14 @@ TYPED_TEST_P(SyncTest, BEH_GetUnresolvedCount) {
   EXPECT_EQ(0, this->sync_.GetUnresolvedCount());
 }
 
-REGISTER_TYPED_TEST_CASE_P(SyncTest, BEH_GetUnresolvedCount);
+TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
+  EXPECT_EQ(0, this->sync_.GetUnresolvedCount());
+  typename TypeParam::UnresolvedEntry unresolved_entry;
+  EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+}
+
+REGISTER_TYPED_TEST_CASE_P(SyncTest, BEH_GetUnresolvedCount,
+                                     BEH_AddUnresolvedEntry);
 
 typedef ::testing::Types<MaidAccountMergePolicy> MergePolicies;
 INSTANTIATE_TYPED_TEST_CASE_P(Sync, SyncTest, MergePolicies);

@@ -123,6 +123,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
   {
     typename TypeParam::UnresolvedEntry unresolved_entry;
     EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+    EXPECT_EQ(0, this->sync_.GetUnresolvedCount());
   }
   {
     typename TypeParam::UnresolvedEntry unresolved_entry(
@@ -131,6 +132,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
                                     NodeId(NodeId::kRandomId)));
     for (int i(0); i != 100; ++i)
       EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+    EXPECT_EQ(1, this->sync_.GetUnresolvedCount());
   }
   {
     typename TypeParam::UnresolvedEntry unresolved_entry(
@@ -141,6 +143,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
 #else
     EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
 #endif
+    EXPECT_EQ(2, this->sync_.GetUnresolvedCount());
   }
   {
     DataNameVariant key(GetRandomKey());
@@ -150,6 +153,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
 
     for (size_t i(0); i < routing::Parameters::node_group_size / 2; ++i) {
       EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+      EXPECT_EQ(3, this->sync_.GetUnresolvedCount());
       // Set up unresolved_entry as though sent from a different peer.
       unresolved_entry.messages_contents.front().peer_id = NodeId(NodeId::kRandomId);
       unresolved_entry.messages_contents.front().entry_id = RandomInt32();
@@ -157,6 +161,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
     }
 
     EXPECT_TRUE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+    EXPECT_EQ(2, this->sync_.GetUnresolvedCount());
   }
 }
 

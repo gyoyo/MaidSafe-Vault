@@ -153,7 +153,7 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
 
     for (size_t i(0); i < routing::Parameters::node_group_size / 2; ++i) {
       EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
-      EXPECT_EQ(3, this->sync_.GetUnresolvedCount());
+      EXPECT_EQ(3 + i, this->sync_.GetUnresolvedCount());
       // Set up unresolved_entry as though sent from a different peer.
       unresolved_entry.messages_contents.front().peer_id = NodeId(NodeId::kRandomId);
       unresolved_entry.messages_contents.front().entry_id = RandomInt32();
@@ -165,8 +165,31 @@ TYPED_TEST_P(SyncTest, BEH_AddUnresolvedEntry) {
   }
 }
 
+TYPED_TEST_P(SyncTest, BEH_AddLocalEntry) {
+  EXPECT_EQ(0, this->sync_.GetUnresolvedCount());
+  {
+    DataNameVariant key(GetRandomKey());
+    typename TypeParam::UnresolvedEntry unresolved_entry(
+        this->CreateUnresolvedEntry(nfs::MessageAction::kPut, key, NodeId(NodeId::kRandomId)));
+    unresolved_entry.messages_contents.front().entry_id = RandomInt32();
+
+    for (size_t i(0); i < routing::Parameters::node_group_size / 2; ++i) {
+      EXPECT_FALSE(this->sync_.AddUnresolvedEntry(unresolved_entry));
+      EXPECT_EQ(i + 1, this->sync_.GetUnresolvedCount());
+      // Set up unresolved_entry as though sent from a different peer.
+      unresolved_entry.messages_contents.front().peer_id = NodeId(NodeId::kRandomId);
+      unresolved_entry.messages_contents.front().entry_id = RandomInt32();
+      unresolved_entry.messages_contents.front().value = (RandomInt32() % 64 + 16);
+    }
+
+    this->sync_.AddLocalEntry(unresolved_entry);
+    EXPECT_EQ(3, this->sync_.GetUnresolvedCount());
+  }
+}
+
 REGISTER_TYPED_TEST_CASE_P(SyncTest, BEH_GetUnresolvedCount,
-                                     BEH_AddUnresolvedEntry);
+                                     BEH_AddUnresolvedEntry,
+                                     BEH_AddLocalEntry);
 
 typedef testing::Types<MaidAccountMergePolicy,
                        PmidAccountMergePolicy> MergePolicies;

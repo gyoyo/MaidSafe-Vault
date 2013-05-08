@@ -187,9 +187,26 @@ TYPED_TEST_P(SyncTest, BEH_AddLocalEntry) {
   }
 }
 
+TYPED_TEST_P(SyncTest, BEH_GetUnresolvedData) {
+  DataNameVariant key(GetRandomKey());
+  typename TypeParam::UnresolvedEntry unresolved_entry(
+      this->CreateUnresolvedEntry(nfs::MessageAction::kPut, key, NodeId(NodeId::kRandomId)));
+  unresolved_entry.messages_contents.front().entry_id = RandomInt32();
+  this->sync_.AddUnresolvedEntry(unresolved_entry);
+  EXPECT_EQ(1, this->sync_.GetUnresolvedCount());
+
+  auto unresolved_entries = this->sync_.GetUnresolvedData();
+  EXPECT_EQ(1, unresolved_entries.size());
+  for (size_t i(0); i < 12; ++i)
+    unresolved_entries = this->sync_.GetUnresolvedData();
+  EXPECT_EQ(0, unresolved_entries.size());
+  EXPECT_EQ(0, this->sync_.GetUnresolvedCount());
+}
+
 REGISTER_TYPED_TEST_CASE_P(SyncTest, BEH_GetUnresolvedCount,
                                      BEH_AddUnresolvedEntry,
-                                     BEH_AddLocalEntry);
+                                     BEH_AddLocalEntry,
+                                     BEH_GetUnresolvedData);
 
 typedef testing::Types<MaidAccountMergePolicy,
                        PmidAccountMergePolicy> MergePolicies;

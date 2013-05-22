@@ -83,9 +83,10 @@ class Accumulator {
   // corresponding return_code != success, the message gets set in the reply.
   bool CheckHandled(const nfs::Message& message, nfs::Reply& reply_out) const;
   // Adds a request with its individual result, pending the overall result of the operation.
-  std::vector<nfs::Reply> PushSingleResult(const nfs::Message& message,
-                                           const routing::ReplyFunctor& reply_functor,
-                                           const maidsafe_error& return_code);
+  std::vector<std::pair<nfs::Message, maidsafe_error>> PushSingleResult(
+      const nfs::Message& message,
+      const routing::ReplyFunctor& reply_functor,
+      const maidsafe_error& return_code);
   // Marks the message as handled and returns all pending requests held with the same ID
   std::vector<PendingRequest> SetHandled(const nfs::Message& message,
                                          const maidsafe_error& return_code);

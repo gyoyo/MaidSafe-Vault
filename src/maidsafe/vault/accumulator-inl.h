@@ -162,11 +162,11 @@ bool Accumulator<Name>::CheckHandled(const nfs::Message& message, nfs::Reply& re
 }
 
 template<typename Name>
-std::vector<nfs::Reply> Accumulator<Name>::PushSingleResult(
+std::vector<std::pair<nfs::Message, maidsafe_error>> Accumulator<Name>::PushSingleResult(
     const nfs::Message& message,
     const routing::ReplyFunctor& reply_functor,
     const maidsafe_error& return_code) {
-  std::vector<nfs::Reply> replies;
+  std::vector<std::pair<nfs::Message, maidsafe_error>> replies;
   if (FindHandled(message) != std::end(handled_requests_))
     return replies;
 
@@ -175,7 +175,7 @@ std::vector<nfs::Reply> Accumulator<Name>::PushSingleResult(
   for (auto& request : pending_requests_) {
     if (request.msg.message_id() == message.message_id() &&
         request.msg.source().node_id == message.source().node_id) {
-      replies.emplace_back(request.return_code);
+      replies.emplace_back(std::make_pair(message, request.return_code));
     }
   }
   // TODO(Profiling) - Consider holding requests in a map/set and each having a timestamp.

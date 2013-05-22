@@ -97,10 +97,15 @@ bool AddResult(const nfs::Message& message,
   {
     std::lock_guard<std::mutex> lock(accumulator_mutex);
     auto pending_results(accumulator.PushSingleResult(message, reply_functor, return_code));
+    std::vector<nfs::Reply> pending_replies;
+    for (auto itr(std::begin(pending_results)); itr != std::end(pending_results); ++itr) {
+      pending_replies.emplace_back((*itr).second);
+    }
+
     if (static_cast<int>(pending_results.size()) < requests_required)
       return false;
 
-    auto result(nfs::GetSuccessOrMostFrequentReply(pending_results, requests_required));
+    auto result(nfs::GetSuccessOrMostFrequentReply(pending_replies, requests_required));
     if (!result.second && pending_results.size() < routing::Parameters::node_group_size)
       return false;
 

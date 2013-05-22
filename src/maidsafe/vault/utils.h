@@ -30,6 +30,29 @@ namespace maidsafe {
 
 namespace vault {
 
+template<typename name>
+struct HandledRequest {
+  HandledRequest(const nfs::MessageId& msg_id_in,
+                  const name& account_name_in,
+                  const nfs::MessageAction& action_type_in,
+                  const Identity& data_name,
+                  const DataTagValue& data_type,
+                  const int32_t& size_in,
+                  const maidsafe_error& return_code_in);
+  HandledRequest(const HandledRequest& other);
+  HandledRequest& operator=(const HandledRequest& other);
+  HandledRequest(HandledRequest&& other);
+  HandledRequest& operator=(HandledRequest&& other);
+
+  nfs::MessageId msg_id;
+  name account_name;
+  nfs::MessageAction action;
+  Identity data_name;
+  DataTagValue data_type;
+  int32_t size;
+  maidsafe_error return_code;
+};
+
 struct CheckHoldersResult {
   std::vector<NodeId> new_holders;
   std::vector<NodeId> old_holders;
@@ -73,6 +96,12 @@ inline bool FromDataGetter(const Message& message);
 template<nfs::Persona persona>
 inline bool PendingRequestsEqual(const nfs::Message& lhs, const nfs::Message& rhs);
 
+template<typename name>
+bool PendingRequestsEqual(const nfs::Message& lhs, const nfs::Message& rhs);
+
+template<typename name>
+typename std::deque<HandledRequest<name>>::const_iterator FindHandled(
+    const nfs::Message& message);
 
 namespace detail {
 

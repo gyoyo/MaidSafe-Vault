@@ -25,6 +25,96 @@ namespace maidsafe {
 
 namespace vault {
 
+
+template<typename Name>
+HandledRequest<Name>::HandledRequest(const nfs::MessageId& msg_id_in,
+                                     const Name& account_name_in,
+                                     const nfs::MessageAction& action_type_in,
+                                     const Identity& data_name_in,
+                                     const DataTagValue& data_type_in,
+                                     const int32_t& size_in,
+                                     const maidsafe_error& return_code_in)
+    : msg_id(msg_id_in),
+      account_name(account_name_in),
+      action(action_type_in),
+      data_name(data_name_in),
+      data_type(data_type_in),
+      size(size_in),
+      return_code(return_code_in) {}
+/*
+template<typename Name>
+typename HandledRequest<Name>::HandledRequest(const typename HandledRequest<Name>& other)
+    : msg_id(other.msg_id),
+      account_name(other.account_name),
+      action(other.action),
+      data_name(other.data_name),
+      data_type(other.data_type),
+      size(other.size),
+      return_code(other.return_code) {}
+
+template<typename Name>
+typename HandledRequest<Name>& HandledRequest<Name>::operator=(
+    const HandledRequest& other) {
+  msg_id = other.msg_id;
+  account_name = other.account_name;
+  action = other.action;
+  data_name = other.data_name,
+  data_type = other.data_type,
+  size = other.size;
+  return_code = other.return_code;
+  return *this;
+}
+
+template<typename Name>
+typename HandledRequest<Name>::HandledRequest(typename HandledRequest<Name>&& other)
+    : msg_id(std::move(other.msg_id)),
+      account_name(std::move(other.account_name)),
+      action(std::move(other.action)),
+      data_name(std::move(other.data_name)),
+      data_type(std::move(other.data_type)),
+      size(std::move(other.size)),
+      return_code(std::move(other.return_code)) {}
+
+template<typename Name>
+typename HandledRequest<Name>& HandledRequest<Name>::operator=(
+    HandledRequest&& other) {
+  msg_id = std::move(other.msg_id);
+  account_name = std::move(other.account_name);
+  action = std::move(other.action);
+  data_name = std::move(other.data_name),
+  data_type = std::move(data_type);
+  size = std::move(other.size);
+  return_code = std::move(other.return_code);
+  return *this;
+}*/
+
+// template<typename Name>
+// typename std::deque<typename HandledRequest<Name>>::const_iterator
+//     FindHandled<Name>(const nfs::Message& message) const {
+//   return std::find_if(std::begin(handled_requests_),
+//                       std::end(handled_requests_),
+//                       [&message](const HandledRequest& handled_request) {
+//                       return (handled_request.msg_id == message.message_id()) &&
+//                              (handled_request.account_name ==
+//                                  Name(Identity(message.source().node_id.string())));
+//                       });
+// }
+
+// template<>
+// typename std::deque<typename HandledRequest<DataNameVariant>>::const_iterator
+//     FindHandled<DataNameVariant>(const nfs::Message& message) const {
+//   return std::find_if(std::begin(handled_requests_),
+//                       std::end(handled_requests_),
+//                       [&message](const HandledRequest& handled_request)->bool {
+//                           auto req_name_and_type =
+//                               boost::apply_visitor(GetTagValueAndIdentityVisitor(),
+//                                                    handled_request.account_name);
+//                           return (handled_request.msg_id == message.message_id()) &&
+//                               (req_name_and_type.first == message.data().type) &&
+//                               (req_name_and_type.second.string() == message.data().name.string());
+//                       });
+// }
+
 template<typename Message>
 inline bool FromMaidAccountHolder(const Message& message) {
   return message.source().persona == nfs::Persona::kMaidAccountHolder;

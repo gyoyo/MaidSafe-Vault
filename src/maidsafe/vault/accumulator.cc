@@ -18,21 +18,6 @@ namespace maidsafe {
 namespace vault {
 
 template<>
-typename std::deque<typename Accumulator<DataNameVariant>::HandledRequest>::const_iterator
-    Accumulator<DataNameVariant>::FindHandled(const nfs::Message& message) const {
-  return std::find_if(std::begin(handled_requests_),
-                      std::end(handled_requests_),
-                      [&message](const HandledRequest& handled_request)->bool {
-                          auto req_name_and_type =
-                              boost::apply_visitor(GetTagValueAndIdentityVisitor(),
-                                                   handled_request.account_name);
-                          return (handled_request.msg_id == message.message_id()) &&
-                              (req_name_and_type.first == message.data().type) &&
-                              (req_name_and_type.second.string() == message.data().name.string());
-                      });
-}
-
-template<>
 std::vector<typename Accumulator<DataNameVariant>::PendingRequest>
     Accumulator<DataNameVariant>::SetHandled(const nfs::Message& message,
                                              const maidsafe_error& return_code) {
@@ -49,13 +34,15 @@ std::vector<typename Accumulator<DataNameVariant>::PendingRequest>
   }
 
   handled_requests_.push_back(
-      Accumulator::HandledRequest(message.message_id(),
-                                  GetDataNameVariant(*message.data().type, message.data().name),
-                                  message.data().action,
-                                  message.data().name,
-                                  *message.data().type,
-                                  static_cast<int32_t>(message.data().content.string().size()),
-                                  return_code));
+      HandledRequest<DataNameVariant>(message.message_id(),
+                                      GetDataNameVariant(*message.data().type,
+                                                         message.data().name),
+                                      message.data().action,
+                                      message.data().name,
+                                      *message.data().type,
+                                      static_cast<int32_t>(
+                                          message.data().content.string().size()),
+                                      return_code));
   if (handled_requests_.size() > kMaxHandledRequestsCount_)
     handled_requests_.pop_front();
   return ret_requests;
@@ -78,13 +65,13 @@ std::vector<typename Accumulator<PmidName>::PendingRequest> Accumulator<PmidName
   }
 
   handled_requests_.push_back(
-      Accumulator::HandledRequest(message.message_id(),
-                                  message.data_holder(),
-                                  message.data().action,
-                                  message.data().name,
-                                  *message.data().type,
-                                  static_cast<int32_t>(message.data().content.string().size()),
-                                  return_code));
+      HandledRequest<PmidName>(message.message_id(),
+                               message.data_holder(),
+                               message.data().action,
+                               message.data().name,
+                               *message.data().type,
+                               static_cast<int32_t>(message.data().content.string().size()),
+                               return_code));
   if (handled_requests_.size() > kMaxHandledRequestsCount_)
     handled_requests_.pop_front();
   return ret_requests;

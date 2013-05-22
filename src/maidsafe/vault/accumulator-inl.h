@@ -67,67 +67,6 @@ typename Accumulator<Name>::PendingRequest& Accumulator<Name>::PendingRequest::o
   return *this;
 }
 
-template<typename Name>
-Accumulator<Name>::HandledRequest::HandledRequest(const nfs::MessageId& msg_id_in,
-                                                  const Name& account_name_in,
-                                                  const nfs::MessageAction& action_type_in,
-                                                  const Identity& data_name_in,
-                                                  const DataTagValue& data_type_in,
-                                                  const int32_t& size_in,
-                                                  const maidsafe_error& return_code_in)
-    : msg_id(msg_id_in),
-      account_name(account_name_in),
-      action(action_type_in),
-      data_name(data_name_in),
-      data_type(data_type_in),
-      size(size_in),
-      return_code(return_code_in) {}
-
-template<typename Name>
-Accumulator<Name>::HandledRequest::HandledRequest(const HandledRequest& other)
-    : msg_id(other.msg_id),
-      account_name(other.account_name),
-      action(other.action),
-      data_name(other.data_name),
-      data_type(other.data_type),
-      size(other.size),
-      return_code(other.return_code) {}
-
-template<typename Name>
-typename Accumulator<Name>::HandledRequest& Accumulator<Name>::HandledRequest::operator=(
-    const HandledRequest& other) {
-  msg_id = other.msg_id;
-  account_name = other.account_name;
-  action = other.action;
-  data_name = other.data_name,
-  data_type = other.data_type,
-  size = other.size;
-  return_code = other.return_code;
-  return *this;
-}
-
-template<typename Name>
-Accumulator<Name>::HandledRequest::HandledRequest(HandledRequest&& other)
-    : msg_id(std::move(other.msg_id)),
-      account_name(std::move(other.account_name)),
-      action(std::move(other.action)),
-      data_name(std::move(other.data_name)),
-      data_type(std::move(other.data_type)),
-      size(std::move(other.size)),
-      return_code(std::move(other.return_code)) {}
-
-template<typename Name>
-typename Accumulator<Name>::HandledRequest& Accumulator<Name>::HandledRequest::operator=(
-    HandledRequest&& other) {
-  msg_id = std::move(other.msg_id);
-  account_name = std::move(other.account_name);
-  action = std::move(other.action);
-  data_name = std::move(other.data_name),
-  data_type = std::move(data_type);
-  size = std::move(other.size);
-  return_code = std::move(other.return_code);
-  return *this;
-}
 
 template<typename Name>
 Accumulator<Name>::Accumulator()
@@ -136,21 +75,11 @@ Accumulator<Name>::Accumulator()
       kMaxPendingRequestsCount_(300),
       kMaxHandledRequestsCount_(1000) {}
 
-template<typename Name>
-typename std::deque<typename Accumulator<Name>::HandledRequest>::const_iterator
-    Accumulator<Name>::FindHandled(const nfs::Message& message) const {
-  return std::find_if(std::begin(handled_requests_),
-                      std::end(handled_requests_),
-                      [&message](const HandledRequest& handled_request) {
-                      return (handled_request.msg_id == message.message_id()) &&
-                             (handled_request.account_name ==
-                                 Name(Identity(message.source().node_id.string())));
-                      });
-}
+
 
 template<typename Name>
 bool Accumulator<Name>::CheckHandled(const nfs::Message& message, nfs::Reply& reply_out) const {
-  const auto it(FindHandled(message));  // NOLINT (dirvine)
+  const auto it(FindHandled<Name>(message));  // NOLINT (dirvine)
   if (it != std::end(handled_requests_)) {
     if (it->return_code.code() == CommonErrors::success)
       reply_out = nfs::Reply(it->return_code);
@@ -167,7 +96,7 @@ std::vector<std::pair<nfs::Message, maidsafe_error>> Accumulator<Name>::PushSing
     const routing::ReplyFunctor& reply_functor,
     const maidsafe_error& return_code) {
   std::vector<std::pair<nfs::Message, maidsafe_error>> replies;
-  if (FindHandled(message) != std::end(handled_requests_))
+  if (FindHandled<Name>(message) != std::end(handled_requests_))
     return replies;
 
   PendingRequest pending_request(message, reply_functor, return_code);
@@ -202,13 +131,13 @@ std::vector<typename Accumulator<Name>::PendingRequest> Accumulator<Name>::SetHa
   }
 
   handled_requests_.push_back(
-      Accumulator::HandledRequest(message.message_id(),
-                                  Name(Identity(message.source().node_id.string())),
-                                  message.data().action,
-                                  message.data().name,
-                                  *message.data().type,
-                                  static_cast<int32_t>(message.data().content.string().size()),
-                                  return_code));
+      HandledRequest<Name>(message.message_id(),
+                           Name(Identity(message.source().node_id.string())),
+                           message.data().action,
+                           message.data().name,
+                           *message.data().type,
+                           static_cast<int32_t>(message.data().content.string().size()),
+                           return_code));
   if (handled_requests_.size() > kMaxHandledRequestsCount_)
     handled_requests_.pop_front();
   return ret_requests;
@@ -221,10 +150,6 @@ std::vector<typename Accumulator<Name>::PendingRequest> Accumulator<Name>::SetHa
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wredundant-decls"
 #endif
-template<>
-typename std::deque<typename Accumulator<DataNameVariant>::HandledRequest>::const_iterator
-    Accumulator<DataNameVariant>::FindHandled(const nfs::Message& message) const;
-
 template<>
 std::vector<typename Accumulator<DataNameVariant>::PendingRequest>
     Accumulator<DataNameVariant>::SetHandled(
@@ -261,9 +186,9 @@ typename Accumulator<Name>::serialised_requests Accumulator<Name>::Serialise(
 }
 
 template<typename Name>
-std::vector<typename Accumulator<Name>::HandledRequest> Accumulator<Name>::Parse(
+std::vector<HandledRequest<Name>> Accumulator<Name>::Parse(
     const typename Accumulator<Name>::serialised_requests& serialised_requests_in) const {
-  std::vector<typename Accumulator<Name>::HandledRequest> handled_requests;
+  std::vector<HandledRequest<Name>> handled_requests;
   protobuf::HandledRequests proto_handled_requests;
   if (!proto_handled_requests.ParseFromString(serialised_requests_in->string()))
     ThrowError(CommonErrors::parsing_error);
@@ -272,7 +197,7 @@ std::vector<typename Accumulator<Name>::HandledRequest> Accumulator<Name>::Parse
       nfs::Reply reply(nfs::Reply::serialised_type(NonEmptyString(
           proto_handled_requests.handled_requests(index).reply())));
       handled_requests.push_back(
-          HandledRequest(
+          HandledRequest<Name>(
               nfs::MessageId(Identity(proto_handled_requests.handled_requests(index).message_id())),
               Name(Identity(proto_handled_requests.name())),
               static_cast<nfs::MessageAction>(

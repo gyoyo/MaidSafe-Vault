@@ -21,6 +21,7 @@
 #include "maidsafe/nfs/reply.h"
 #include "maidsafe/nfs/types.h"
 #include "maidsafe/nfs/utils.h"
+#include "maidsafe/vault/utils.h"
 
 
 namespace maidsafe {
@@ -53,27 +54,6 @@ class Accumulator {
     maidsafe_error return_code;
   };
 
-  struct HandledRequest {
-    HandledRequest(const nfs::MessageId& msg_id_in,
-                   const Name& account_name_in,
-                   const nfs::MessageAction& action_type_in,
-                   const Identity& data_name,
-                   const DataTagValue& data_type,
-                   const int32_t& size_in,
-                   const maidsafe_error& return_code_in);
-    HandledRequest(const HandledRequest& other);
-    HandledRequest& operator=(const HandledRequest& other);
-    HandledRequest(HandledRequest&& other);
-    HandledRequest& operator=(HandledRequest&& other);
-
-    nfs::MessageId msg_id;
-    Name account_name;
-    nfs::MessageAction action;
-    Identity data_name;
-    DataTagValue data_type;
-    int32_t size;
-    maidsafe_error return_code;
-  };
 
   typedef TaggedValue<NonEmptyString, struct SerialisedRequestsTag> serialised_requests;
 
@@ -91,11 +71,11 @@ class Accumulator {
   std::vector<PendingRequest> SetHandled(const nfs::Message& message,
                                          const maidsafe_error& return_code);
   // Returns all handled requests for the given account name.
-  std::vector<HandledRequest> Get(const Name& name) const;
+  std::vector<HandledRequest<Name>> Get(const Name& name) const;
   // Serialises all handled requests for the given account name.
   serialised_requests Serialise(const Name& name) const;
   // Parses the list of serialised handled requests.
-  std::vector<HandledRequest> Parse(const serialised_requests& serialised_requests_in) const;
+  std::vector<HandledRequest<Name>> Parse(const serialised_requests& serialised_requests_in) const;
 
   friend class test::AccumulatorTest_BEH_PushSingleResult_Test;
   friend class test::AccumulatorTest_BEH_PushSingleResultThreaded_Test;
@@ -109,11 +89,11 @@ class Accumulator {
   Accumulator& operator=(const Accumulator&);
   Accumulator(Accumulator&&);
   Accumulator& operator=(Accumulator&&);
-  typename std::deque<HandledRequest>::const_iterator FindHandled(
-      const nfs::Message& message) const;
+//   typename std::deque<HandledRequest>::const_iterator FindHandled(
+//       const nfs::Message& message) const;
 
   std::deque<PendingRequest> pending_requests_;
-  std::deque<HandledRequest> handled_requests_;
+  std::deque<HandledRequest<Name>> handled_requests_;
   const size_t kMaxPendingRequestsCount_, kMaxHandledRequestsCount_;
 };
 

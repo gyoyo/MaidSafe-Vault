@@ -75,6 +75,12 @@ inline bool FromDataGetter(const Message& message) {
   return message.source().persona == nfs::Persona::kDataGetter;
 }
 
+template<>
+inline bool PendingRequestsEqual<nfs::Persona::kMaidAccountHolder>(const nfs::Message& lhs,
+                                                                   const nfs::Message& rhs) {
+  return lhs.message_id() == rhs.message_id() && lhs.source().persona == rhs.source().persona;
+}
+
 
 namespace detail {
 

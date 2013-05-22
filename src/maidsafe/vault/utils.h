@@ -70,6 +70,9 @@ inline bool FromWorldDirectoryManager(const Message& message);
 template<typename Message>
 inline bool FromDataGetter(const Message& message);
 
+template<nfs::Persona persona>
+inline bool PendingRequestsEqual(const nfs::Message& lhs, const nfs::Message& rhs);
+
 
 namespace detail {
 

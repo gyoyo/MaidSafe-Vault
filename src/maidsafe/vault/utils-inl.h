@@ -41,9 +41,9 @@ HandledRequest<Name>::HandledRequest(const nfs::MessageId& msg_id_in,
       data_type(data_type_in),
       size(size_in),
       return_code(return_code_in) {}
-/*
+
 template<typename Name>
-typename HandledRequest<Name>::HandledRequest(const typename HandledRequest<Name>& other)
+HandledRequest<Name>::HandledRequest(const HandledRequest<Name>& other)
     : msg_id(other.msg_id),
       account_name(other.account_name),
       action(other.action),
@@ -53,7 +53,7 @@ typename HandledRequest<Name>::HandledRequest(const typename HandledRequest<Name
       return_code(other.return_code) {}
 
 template<typename Name>
-typename HandledRequest<Name>& HandledRequest<Name>::operator=(
+HandledRequest<Name>& HandledRequest<Name>::operator=(
     const HandledRequest& other) {
   msg_id = other.msg_id;
   account_name = other.account_name;
@@ -66,7 +66,7 @@ typename HandledRequest<Name>& HandledRequest<Name>::operator=(
 }
 
 template<typename Name>
-typename HandledRequest<Name>::HandledRequest(typename HandledRequest<Name>&& other)
+HandledRequest<Name>::HandledRequest(HandledRequest<Name>&& other)
     : msg_id(std::move(other.msg_id)),
       account_name(std::move(other.account_name)),
       action(std::move(other.action)),
@@ -76,8 +76,8 @@ typename HandledRequest<Name>::HandledRequest(typename HandledRequest<Name>&& ot
       return_code(std::move(other.return_code)) {}
 
 template<typename Name>
-typename HandledRequest<Name>& HandledRequest<Name>::operator=(
-    HandledRequest&& other) {
+HandledRequest<Name>& HandledRequest<Name>::operator=(
+    HandledRequest<Name>&& other) {
   msg_id = std::move(other.msg_id);
   account_name = std::move(other.account_name);
   action = std::move(other.action);
@@ -86,7 +86,7 @@ typename HandledRequest<Name>& HandledRequest<Name>::operator=(
   size = std::move(other.size);
   return_code = std::move(other.return_code);
   return *this;
-}*/
+}
 
 // template<typename Name>
 // typename std::deque<typename HandledRequest<Name>>::const_iterator

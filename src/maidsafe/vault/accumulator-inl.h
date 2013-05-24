@@ -76,10 +76,36 @@ Accumulator<Name>::Accumulator()
       kMaxHandledRequestsCount_(1000) {}
 
 
+template<typename Name>
+typename std::deque<HandledRequest<Name>>::const_iterator
+    Accumulator<Name>::FindHandled(const nfs::Message& message) const {
+  return std::find_if(std::begin(handled_requests_),
+                      std::end(handled_requests_),
+                      [&message](const HandledRequest<Name>& handled_request) {
+                      return (handled_request.msg_id == message.message_id()) &&
+                             (handled_request.account_name ==
+                                 Name(Identity(message.source().node_id.string())));
+                      });
+}
+
+template<>
+typename std::deque<HandledRequest<DataNameVariant>>::const_iterator
+    Accumulator<DataNameVariant>::FindHandled(const nfs::Message& message) const {
+  return std::find_if(std::begin(handled_requests_),
+                      std::end(handled_requests_),
+                      [&message](const HandledRequest<DataNameVariant>& handled_request)->bool {
+                          auto req_name_and_type =
+                              boost::apply_visitor(GetTagValueAndIdentityVisitor(),
+                                                   handled_request.account_name);
+                          return (handled_request.msg_id == message.message_id()) &&
+                              (req_name_and_type.first == message.data().type) &&
+                              (req_name_and_type.second.string() == message.data().name.string());
+                      });
+}
 
 template<typename Name>
 bool Accumulator<Name>::CheckHandled(const nfs::Message& message, nfs::Reply& reply_out) const {
-  const auto it(FindHandled<Name>(message));  // NOLINT (dirvine)
+  const auto it(FindHandled(message));  // NOLINT (dirvine)
   if (it != std::end(handled_requests_)) {
     if (it->return_code.code() == CommonErrors::success)
       reply_out = nfs::Reply(it->return_code);
@@ -96,7 +122,7 @@ std::vector<std::pair<nfs::Message, maidsafe_error>> Accumulator<Name>::PushSing
     const routing::ReplyFunctor& reply_functor,
     const maidsafe_error& return_code) {
   std::vector<std::pair<nfs::Message, maidsafe_error>> replies;
-  if (FindHandled<Name>(message) != std::end(handled_requests_))
+  if (FindHandled(message) != std::end(handled_requests_))
     return replies;
 
   PendingRequest pending_request(message, reply_functor, return_code);
@@ -150,6 +176,10 @@ std::vector<typename Accumulator<Name>::PendingRequest> Accumulator<Name>::SetHa
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wredundant-decls"
 #endif
+template<>
+typename std::deque<HandledRequest<DataNameVariant>>::const_iterator
+    Accumulator<DataNameVariant>::FindHandled(const nfs::Message& message) const;
+
 template<>
 std::vector<typename Accumulator<DataNameVariant>::PendingRequest>
     Accumulator<DataNameVariant>::SetHandled(

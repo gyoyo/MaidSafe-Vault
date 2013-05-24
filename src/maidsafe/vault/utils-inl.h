@@ -88,33 +88,6 @@ HandledRequest<Name>& HandledRequest<Name>::operator=(
   return *this;
 }
 
-// template<typename Name>
-// typename std::deque<typename HandledRequest<Name>>::const_iterator
-//     FindHandled<Name>(const nfs::Message& message) const {
-//   return std::find_if(std::begin(handled_requests_),
-//                       std::end(handled_requests_),
-//                       [&message](const HandledRequest& handled_request) {
-//                       return (handled_request.msg_id == message.message_id()) &&
-//                              (handled_request.account_name ==
-//                                  Name(Identity(message.source().node_id.string())));
-//                       });
-// }
-
-// template<>
-// typename std::deque<typename HandledRequest<DataNameVariant>>::const_iterator
-//     FindHandled<DataNameVariant>(const nfs::Message& message) const {
-//   return std::find_if(std::begin(handled_requests_),
-//                       std::end(handled_requests_),
-//                       [&message](const HandledRequest& handled_request)->bool {
-//                           auto req_name_and_type =
-//                               boost::apply_visitor(GetTagValueAndIdentityVisitor(),
-//                                                    handled_request.account_name);
-//                           return (handled_request.msg_id == message.message_id()) &&
-//                               (req_name_and_type.first == message.data().type) &&
-//                               (req_name_and_type.second.string() == message.data().name.string());
-//                       });
-// }
-
 template<typename Message>
 inline bool FromMaidAccountHolder(const Message& message) {
   return message.source().persona == nfs::Persona::kMaidAccountHolder;

@@ -89,8 +89,9 @@ class Accumulator {
   Accumulator& operator=(const Accumulator&);
   Accumulator(Accumulator&&);
   Accumulator& operator=(Accumulator&&);
-//   typename std::deque<HandledRequest>::const_iterator FindHandled(
-//       const nfs::Message& message) const;
+
+  typename std::deque<HandledRequest<Name>>::const_iterator FindHandled(
+      const nfs::Message& message) const;
 
   std::deque<PendingRequest> pending_requests_;
   std::deque<HandledRequest<Name>> handled_requests_;

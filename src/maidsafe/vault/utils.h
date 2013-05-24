@@ -99,10 +99,6 @@ inline bool PendingRequestsEqual(const nfs::Message& lhs, const nfs::Message& rh
 template<typename name>
 bool PendingRequestsEqual(const nfs::Message& lhs, const nfs::Message& rhs);
 
-template<typename name>
-typename std::deque<HandledRequest<name>>::const_iterator FindHandled(
-    const nfs::Message& message);
-
 namespace detail {
 
 void InitialiseDirectory(const boost::filesystem::path& directory);

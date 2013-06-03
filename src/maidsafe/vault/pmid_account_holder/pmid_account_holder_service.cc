@@ -115,47 +115,6 @@ void PmidAccountHolderService::HandleChurnEvent(routing::MatrixChange matrix_cha
   }
 }
 
-void PmidAccountHolderService::CheckAccounts() {
-//  // Non-archived
-//  std::vector<PmidName> accounts_held(pmid_account_handler_.GetAccountNames());
-//  for (auto it(accounts_held.begin()); it != accounts_held.end(); ++it) {
-//    bool is_connected(routing_.IsConnectedVault(NodeId(*it)));
-//    PmidAccount::DataHolderStatus account_status(pmid_account_handler_.AccountStatus(*it));
-//    if (AssessRange(*it, account_status, is_connected))
-//      it = accounts_held.erase(it);
-//  }
-
-//  // Archived
-//  pmid_account_handler_.PruneArchivedAccounts(
-//      [this] (const PmidName& pmid_name) {
-//        return routing::GroupRangeStatus::kOutwithRange ==
-//               routing_.IsNodeIdInGroupRange(NodeId(pmid_name));
-//      });
-}
-
-bool PmidAccountHolderService::AssessRange(const PmidName& account_name,
-                                           PmidAccount::DataHolderStatus account_status,
-                                           bool is_connected) {
-  int temp_int(0);
-  switch (temp_int/*routing_.IsNodeIdInGroupRange(NodeId(account_name))*/) {
-    // TODO(Team): Change to check the range
-    case 0 /*routing::kOutwithRange*/:
-//        pmid_account_handler_.MoveAccountToArchive(account_name);
-        return true;
-    case 1 /*routing::kInProximalRange*/:
-        // serialise the memory deque and put to file
-        return false;
-    case 2 /*routing::kInRange*/:
-        if (account_status == PmidAccount::DataHolderStatus::kUp && !is_connected) {
-          InformOfDataHolderDown(account_name);
-        } else if (account_status == PmidAccount::DataHolderStatus::kDown && is_connected) {
-          InformOfDataHolderUp(account_name);
-        }
-        return false;
-    default: return false;
-  }
-}
-
 void PmidAccountHolderService::ValidateDataSender(const nfs::Message& message) const {
   if (!message.HasDataHolder()
       || !routing_.IsConnectedVault(NodeId(message.data_holder()->string()))

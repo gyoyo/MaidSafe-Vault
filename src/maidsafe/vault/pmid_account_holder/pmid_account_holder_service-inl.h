@@ -27,13 +27,13 @@ namespace vault {
 
 namespace detail {
 
-template<typename Data, nfs::MessageAction action>
+template<typename Data, nfs::MessageAction Action>
 PmidAccountUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
                                                  const NodeId& this_id) {
-  static_assert(action == nfs::MessageAction::kPut || action == nfs::MessageAction::kDelete,
+  static_assert(Action == nfs::MessageAction::kPut || Action == nfs::MessageAction::kDelete,
                 "Action must be either kPut of kDelete.");
   return PmidAccountUnresolvedEntry(
-    std::make_pair(GetDataNameVariant(DataTagValue(message.data().type.get()), Identity(message.data().name)), action),
+    std::make_pair(GetDataNameVariant(DataTagValue(message.data().type.get()), Identity(message.data().name)), Action),
       message.data().content.string().size(),
       this_id);
 }
@@ -98,23 +98,21 @@ void PmidAccountHolderService::HandlePut(const Message& message,
 }
 
 template<typename Data>
-void PmidAccountHolderService::HandleDelete(const Message& message,
-                                            const ReplyFunctor& reply_functor) {
+void PmidAccountHolderService::HandleDelete(const nfs::Message& message,
+                                            const routing::ReplyFunctor& reply_functor) {
+  SendReplyAndAddToAccumulator(message, reply_functor, nfs::Reply(CommonErrors::success));
   try {
+    auto account_name(detail::GetPmidAccountName(message));
     typename Data::name_type data_name(message.data().name);
-    if (detail::AddResult(message, reply_functor, MakeError(CommonErrors::success),
-                          accumulator_, accumulator_mutex_, kDeleteRequestsRequired_)) {
-      pmid_account_handler_.Delete<Data>(message.data_holder(), data_name);
-      nfs_.Delete<Data>(message.data_holder(), data_name, nullptr);
-    }
+    pmid_account_handler_.DeleteData<Data>(account_name, data_name);
+    AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kDelete>(message, 0);
+    nfs_.Delete<Data>(data_name, [](std::string) {});
   }
   catch(const maidsafe_error& error) {
-    detail::AddResult(message, reply_functor, error, accumulator_, accumulator_mutex_,
-                      kDeleteRequestsRequired_);
+    LOG(kWarning) << error.what();
   }
   catch(...) {
-    detail::AddResult(message, reply_functor, MakeError(CommonErrors::unknown),
-                      accumulator_, accumulator_mutex_, kDeleteRequestsRequired_);
+    LOG(kWarning) << "Unknown error.";
   }
 }
 
@@ -131,12 +129,28 @@ void PmidAccountHolderService::HandlePutResult(const nfs::Reply& overall_result,
   }
 }
 
-template<typename Data, nfs::MessageAction action>
+template<typename Data, nfs::MessageAction Action>
 void PmidAccountHolderService::AddLocalUnresolvedEntryThenSync(const nfs::Message& message) {
   auto account_name(detail::GetPmidAccountName(message));
-  auto unresolved_entry(detail::CreateUnresolvedEntry<Data, action>(message, routing_.kNodeId()));
+  auto unresolved_entry(detail::CreateUnresolvedEntry<Data, Action>(message, routing_.kNodeId()));
   pmid_account_handler_.AddLocalUnresolvedEntry(account_name, unresolved_entry);
   Sync(account_name);
+}
+
+template<typename Data, nfs::MessageAction Action>
+void PmidAccountHolderService::ReplyToMetadataManagers(
+      const std::vector<PmidAccountResolvedEntry>& resolved_entries,
+      const PmidName& pmid_name) {
+  GetTagValueAndIdentityVisitor type_and_name_visitor;
+  //for (auto& resolved_entry : resolved_entries) {
+  //  auto type_and_name(boost::apply_visitor(type_and_name_visitor, resolved_entry.key.first));
+  //  nfs::Message::Data data(type_and_name.first, type_and_name.second, NonEmptyString(), Action);
+  //  nfs::Message message(nfs::Persona::kMetadataManager,
+  //                       nfs::PersonaId(nfs::Persona::kPmidAccountHolder, routing_.kNodeId()),
+  //                       data,
+  //                       pmid_name);
+  //  message.
+  //}
 }
 
 }  // namespace vault

@@ -87,10 +87,6 @@ class PmidAccountHolderService {
   void TransferAccount(const PmidName& account_name, const NodeId& new_node);
   void HandleAccountTransfer(const nfs::Message& message);
 
-  void CheckAccounts();
-  bool AssessRange(const PmidName& account_name,
-                   PmidAccount::DataHolderStatus account_status,
-                   bool is_connected);
   void ValidateMessage(const nfs::Message& message) const;
   void InformOfDataHolderDown(const PmidName& pmid_name);
   void InformOfDataHolderUp(const PmidName& pmid_name);

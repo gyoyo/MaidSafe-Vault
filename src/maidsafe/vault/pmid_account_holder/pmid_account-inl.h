@@ -1,5 +1,5 @@
 /***************************************************************************************************
- *  Copyright 2013 MaidSafe.net limited                                                            *
+ *  Copyright 2012 MaidSafe.net limited                                                            *
  *                                                                                                 *
  *  The following source code is property of MaidSafe.net limited and is not meant for external    *
  *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
@@ -9,35 +9,22 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_KEY_H_
-#define MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_KEY_H_
-
-#include "maidsafe/data_types/data_name_variant.h"
-#include "maidsafe/nfs/persona_id.h"
-#include "maidsafe/nfs/types.h"
-
+#ifndef MAIDSAFE_VAULT_PMID_ACCOUNT_HOLDER_PMID_ACCOUNT_INL_H_
+#define MAIDSAFE_VAULT_PMID_ACCOUNT_HOLDER_PMID_ACCOUNT_INL_H_
 
 namespace maidsafe {
 
 namespace vault {
 
-struct StructuredDataKey {
-  nfs::PersonaId peer_type;
-  DataNameVariant data_name;
-  nfs::MessageAction action;
-};
-
-struct StructuredDataDbKey {
-  explicit StructuredDataDbKey(StructuredDataKey& structured_data_key)
-      : peer_type(structured_data_key.peer_type),
-        data_name(structured_data_key.data_name) {}
-  nfs::PersonaId peer_type;
-  DataNameVariant data_name;
-};
-
+template<typename Data>
+void PmidAccount::DeleteData(const typename Data::name_type& name) {
+  pmid_record_.stored_count--;
+  pmid_record_.stored_total_size -= sync_.AllowDelete<Data>(name);
+}
 
 }  // namespace vault
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_KEY_H_
+
+#endif  // MAIDSAFE_VAULT_PMID_ACCOUNT_HOLDER_PMID_ACCOUNT_INL_H_

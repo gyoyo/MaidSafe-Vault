@@ -21,6 +21,8 @@
 #include "maidsafe/common/error.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/vault/unresolved_element.pb.h"
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -124,6 +126,8 @@ std::vector<PmidName> MetadataHandler::GetOnlineDataHolders(
   return std::vector<PmidName>();
 }
 
+
+// Do we need to check unresolved list as well ?
 template<typename Data>
 bool MetadataHandler::CheckMetadataExists(const typename Data::name_type& /*data_name*/) const {
 //  try {
@@ -138,6 +142,32 @@ bool MetadataHandler::CheckMetadataExists(const typename Data::name_type& /*data
 template<typename Data>
 int32_t MetadataHandler::CheckPut(const typename Data::name_type& /*data_name*/, int32_t /*data_size*/) {
   return 0;
+}
+
+template <typename Data>
+NonEmptyString MetadataHandler::GetSyncData(const typename Data::name_type& data_name) {
+  DataNameVariant data_name_variant(GetDataNameVariant(Data::name_type::tag_type::kEnumValue,
+                                                       data_name));
+  if (sync_.GetUnresolvedCount(data_name_variant) < kSyncTriggerCount_)
+    return NonEmptyString();
+
+  auto unresolved_entries(sync_.GetUnresolvedData(data_name_variant));
+  if (unresolved_entries.empty())
+    return NonEmptyString();
+
+  protobuf::UnresolvedEntries proto_unresolved_entries;
+  for (const auto& unresolved_entry : unresolved_entries) {
+    proto_unresolved_entries.add_serialised_unresolved_entry(
+        unresolved_entry.Serialise()->string());
+  }
+  return NonEmptyString(proto_unresolved_entries.SerializeAsString());
+}
+
+template<typename Data>
+void MetadataHandler::IncrementSyncAttempts(const typename Data::name_type& data_name) {
+  DataNameVariant data_name_variant(GetDataNameVariant(Data::name_type::tag_type::kEnumValue,
+                                                       data_name));
+  sync_.IncrementSyncAttempts(data_name_variant);
 }
 
 }  // namespace vault

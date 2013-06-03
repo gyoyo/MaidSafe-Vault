@@ -23,6 +23,7 @@
 
 #include "maidsafe/vault/metadata_manager/metadata_helpers.h"
 #include "maidsafe/vault/metadata_manager/metadata.pb.h"
+#include "maidsafe/vault/sync.pb.h"
 #include "maidsafe/vault/unresolved_element.h"
 #include "maidsafe/vault/utils.h"
 
@@ -33,16 +34,17 @@ namespace vault {
 
 namespace detail {
 
-template<typename Data, nfs::MessageAction action>
+template<typename Data, nfs::MessageAction Action>
 MetadataUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
-                                                 const MetadataValueDelta& delta,
-                                                 const NodeId& this_id) {
-  static_assert(action == nfs::MessageAction::kPut || action == nfs::MessageAction::kDelete,
+                                              const MetadataValue& metadata_value,
+                                              const NodeId& this_id) {
+  static_assert(Action == nfs::MessageAction::kPut || Action == nfs::MessageAction::kDelete,
                 "Action must be either kPut of kDelete.");
   assert(message.data().type);
   return MetadataUnresolvedEntry(
-      std::make_pair(GetDataNameVariant(*message.data().type, message.data().name),
-                     action), delta, this_id);
+      std::make_pair(GetDataNameVariant(DataTagValue(message.data().type.get()),
+                                        Identity(message.data().name)), Action),
+      metadata_value, this_id);
 }
 
 }  // namespace detail
@@ -76,6 +78,10 @@ void MetadataManagerService::HandleMessage(const nfs::Message& message,
       return HandleGet<Data>(message, reply_functor);
     case nfs::MessageAction::kDelete:
       return HandleDelete<Data>(message, reply_functor);
+    case nfs::MessageAction::kSynchronise:
+      return HandleSync(message);
+    case nfs::MessageAction::kAccountTransfer:
+      return HandleRecordTransfer<Data>(message);
     default: {
       reply = nfs::Reply(VaultErrors::operation_not_supported, message.Serialise().data);
       std::lock_guard<std::mutex> lock(accumulator_mutex_);
@@ -94,18 +100,20 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
               typename Data::serialised_type(message.data().content));
     auto data_name(data.name());
     auto data_size(static_cast<int32_t>(message.data().content.string().size()));
-    //FIXME get cost
+    //FIXME(Prakash) get cost
     metadata_handler_.template CheckPut<Data>(data_name, data_size);
+    // FIXME (Prakash) Need to update accumulator to accomodate cost
     if (detail::AddResult(message, reply_functor, MakeError(CommonErrors::success),
                           accumulator_, accumulator_mutex_, kPutRequestsRequired_)) {
+//FIXME (Prakash)      if (cost ==  new_data_cost) {  // discuss
       if (metadata_handler_.template CheckMetadataExists<Data>(data_name)) {
-        MetadataValueDelta delta;
-        delta.data_size = data_size;
-//        AddLocalUnresolvedEntryThenSync(message, delta);
+        MetadataValue metadata_value(data_size);
+        AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message, metadata_value);
       } else {
         PmidName target_data_holder(routing_.ClosestToId(message.source().node_id) ?
                                     message.data_holder() :
                                     Identity(routing_.RandomConnectedNode().string()));
+        // Account will be created by PutResult message from PAH
         Put(data, target_data_holder);
       }
     }
@@ -120,19 +128,9 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
   }
 }
 
-// FIXME reply not needed
 template<typename Data>
 void MetadataManagerService::Put(const Data& data, const PmidName& target_data_holder) {
-  auto put_op(std::make_shared<nfs::OperationOp>(
-      kPutRepliesSuccessesRequired_,
-      [this] (nfs::Reply overall_result) {
-        this->HandlePutResult<Data>(overall_result);
-      }));
-  nfs_.Put(target_data_holder,
-           data,
-           [put_op](std::string serialised_reply) {
-             nfs::HandleOperationReply(put_op, serialised_reply);
-           });
+  nfs_.Put(target_data_holder, data, nullptr);
 }
 
 template<typename Data>
@@ -246,6 +244,7 @@ void MetadataManagerService::HandleDelete(const nfs::Message& message,
 
 }
 
+//TODO(Prakash) Change this to service to handle data stored/ not stored message and then sync
 template<typename Data>
 void MetadataManagerService::HandlePutResult(const nfs::Reply& overall_result) {
   if (overall_result.IsSuccess())
@@ -285,15 +284,33 @@ void MetadataManagerService::HandleGetReply(std::string serialised_reply) {
 template<typename Data>
 void MetadataManagerService::OnGenericErrorHandler(nfs::Message /*message*/) {}
 
-template<typename Data, nfs::MessageAction action>
+template<typename Data, nfs::MessageAction Action>
 void MetadataManagerService::AddLocalUnresolvedEntryThenSync(
     const nfs::Message& message,
-    const MetadataValueDelta& delta) {
-  auto unresolved_entry(detail::CreateUnresolvedEntry<Data, action>(message, delta,
+    const MetadataValue& metadata_value) {
+  auto unresolved_entry(detail::CreateUnresolvedEntry<Data, Action>(message, metadata_value,
                                                                     routing_.kNodeId()));
   metadata_handler_.AddLocalUnresolvedEntry(unresolved_entry);
-  DataNameVariant data_name(message.data().name);
-  Sync(data_name);
+  typename Data::name_type data_name(message.data().name);
+  Sync<Data>(data_name);
+}
+
+// =============== Sync ============================================================================
+
+template<typename Data>
+void MetadataManagerService::Sync(const typename Data::name_type& data_name) {
+  auto serialised_sync_data(metadata_handler_.GetSyncData<Data>(data_name));
+  if (!serialised_sync_data.IsInitialised())  // Nothing to sync
+    return;
+
+  nfs_.Sync<Data>(data_name, serialised_sync_data);
+  // TODO(Fraser#5#): 2013-05-03 - Check this is correct place to increment sync attempt counter.
+  metadata_handler_.IncrementSyncAttempts<Data>(data_name);
+}
+
+// =============== Record transfer =================================================================
+template<typename Data>
+void MetadataManagerService::HandleRecordTransfer(const nfs::Message& /*message*/) {
 }
 
 }  // namespace vault

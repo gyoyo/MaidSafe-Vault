@@ -17,6 +17,22 @@ message MaidAndPmidUnresolvedEntry {
   optional bool dont_add_to_db = 3;
 }
 
+message MetadataUnresolvedEntry {
+  message Key {
+    required int32 type = 1;
+    required bytes name = 2;
+    required int32 action = 3;
+  }
+  message MessageContent {
+    required bytes peer = 1;
+    optional int32 entry_id = 2;
+    optional bytes value = 3;
+  }
+  required Key key = 1;
+  repeated MessageContent messages_contents = 2;
+  optional bool dont_add_to_db = 3;
+}
+
 message UnresolvedEntries {
   repeated bytes serialised_unresolved_entry = 1;
 }

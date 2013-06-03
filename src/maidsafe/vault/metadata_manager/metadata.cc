@@ -51,10 +51,13 @@ MetadataValue::MetadataValue(int size)
     ThrowError(CommonErrors::invalid_parameter);
 }
 
-MetadataValue::serialised_type MetadataValue::Serialise() {
+MetadataValue::serialised_type MetadataValue::Serialise() const {
+//  if (!subscribers || ((*subscribers) == 0) || (online_pmid_name.empty()))
+//    ThrowError(CommonErrors::uninitialised);  // Cannot serialise if not a complete db value
+// FIXME
   protobuf::MetadataValue metadata_value_proto;
   metadata_value_proto.set_size(data_size);
-  metadata_value_proto.set_subscribers(subscribers);
+  metadata_value_proto.set_subscribers(*subscribers);
   for (const auto& i: online_pmid_name)
     metadata_value_proto.add_online_pmid_name(i->string());
   for (const auto& i: offline_pmid_name)
@@ -64,7 +67,7 @@ MetadataValue::serialised_type MetadataValue::Serialise() {
 }
 
 Metadata::Metadata(const DataNameVariant& data_name, MetadataDb* metadata_db,
-                         int32_t data_size)
+                   int32_t data_size)
     : data_name_(data_name),
       value_([&metadata_db, data_name, data_size, this]()->MetadataValue {
               assert(metadata_db);
@@ -96,7 +99,7 @@ Metadata::Metadata(const DataNameVariant& data_name, MetadataDb* metadata_db)
 void Metadata::SaveChanges(MetadataDb* metadata_db) {
   assert(metadata_db);
   //TODO(Prakash): Handle case of modifying unique data
-  if (value_.subscribers < 1) {
+  if (*value_.subscribers < 1) {
     metadata_db->Delete(data_name_);
   } else {
     auto kv_pair(std::make_pair(data_name_, value_.Serialise()));

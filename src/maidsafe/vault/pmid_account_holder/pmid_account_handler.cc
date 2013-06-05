@@ -89,7 +89,7 @@ PmidRecord PmidAccountHandler::GetPmidRecord(const PmidName& account_name) {
                             return account_name == pmid_account.second->name();
                          });
   if (it != std::end(pmid_accounts_))
-    return it->second->GetPmidRecord();
+    return it->second->pmid_record();
   return PmidRecord();
 }
 

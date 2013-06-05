@@ -71,11 +71,10 @@ class PmidAccount {
   void ReplaceNodeInSyncList(const NodeId& old_node, const NodeId& new_node);
   void IncrementSyncAttempts();
 
-  PmidRecord GetPmidRecord();
-
-  name_type name() const { return pmid_name_; }
-  DataHolderStatus data_holder_status() const { return data_holder_status_; }
-  int64_t total_data_stored_by_pmids() const { return pmid_record_.stored_total_size; }
+  PmidRecord pmid_record() const;
+  name_type name() const;
+  DataHolderStatus data_holder_status() const;
+  int64_t total_data_stored_by_pmids() const;
 
  private:
   PmidAccount(const PmidAccount&);

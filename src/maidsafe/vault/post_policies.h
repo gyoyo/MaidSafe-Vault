@@ -26,7 +26,7 @@
 #include "maidsafe/nfs/message.h"
 #include "maidsafe/nfs/message_wrapper.h"
 #include "maidsafe/nfs/types.h"
-
+#include "maidsafe/nfs/reply.h"
 
 namespace maidsafe {
 
@@ -146,8 +146,24 @@ class PmidAccountHolderMiscellaneousPolicy {
  public:
   PmidAccountHolderMiscellaneousPolicy(routing::Routing& routing, const passport::Pmid& pmid)
       : routing_(routing),
-        kSource_(nfs::Persona::kMaidAccountHolder, routing_.kNodeId()),
+        kSource_(nfs::Persona::kPmidAccountHolder, routing_.kNodeId()),
         kPmid_(pmid) {}
+
+  void ReturnPmidTotals(const NodeId& target_node_id,
+                        const nfs::Reply::serialised_type& serialised_reply) {
+    nfs::Message::Data data(Identity(target_node_id.string()), serialised_reply.data,
+                            nfs::MessageAction::kPmidTotals);
+    nfs::Message message(nfs::Persona::kMaidAccountHolder, kSource_, data);
+    nfs::MessageWrapper message_wrapper(message.Serialise());
+    routing_.SendGroup(target_node_id, message_wrapper.Serialise()->string(), false, nullptr);
+  }
+
+  /*void ReplyToMetadataManagers() {
+    GetTagValueAndIdentityVisitor type_and_name_visitor;
+    auto type_and_name(boost::apply_visitor(type_and_name_visitor, resolved_entry.key.first));
+    nfs::Message::Data data(type_and_name.first, type_and_name.second, NonEmptyString(), Action);
+    nfs::Message message(nfs::Persona::kMetadataManager, kSource_, data, kPmid_.name());
+  }*/
 
  private:
   routing::Routing& routing_;

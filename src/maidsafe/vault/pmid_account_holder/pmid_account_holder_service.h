@@ -50,16 +50,14 @@ class PmidAccountHolderService {
   void ValidateDataSender(const nfs::Message& message) const;
   void ValidateGenericSender(const nfs::Message& message) const;
 
-  void SendReplyAndAddToAccumulator(const nfs::Message& message,
-                                    const routing::ReplyFunctor& reply_functor,
-                                    const nfs::Reply& reply);
+  void CreatePmidAccount(const nfs::Message& message);
+  void GetPmidTotals(const nfs::Message& message);
 
+  // =============== Put/Delete data ================================================================
   template<typename Data>
   void HandlePut(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
   void HandleDelete(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
-
-  void HandleGetPmidTotals(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
 
   template<typename Data>
   void AdjustAccount(const nfs::Message& message);
@@ -71,8 +69,9 @@ class PmidAccountHolderService {
                        const nfs::Message& message,
                        routing::ReplyFunctor reply_functor);
 
-  bool HandleReceivedSyncData(const NonEmptyString& serialised_account);
-
+  void SendReplyAndAddToAccumulator(const nfs::Message& message,
+                                    const routing::ReplyFunctor& reply_functor,
+                                    const nfs::Reply& reply);
 
   // =============== Sync ==========================================================================
   void Sync(const PmidName& account_name);

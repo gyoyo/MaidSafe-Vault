@@ -142,16 +142,10 @@ template<typename Data, nfs::MessageAction Action>
 void PmidAccountHolderService::ReplyToMetadataManagers(
       const std::vector<PmidAccountResolvedEntry>& resolved_entries,
       const PmidName& pmid_name) {
-  GetTagValueAndIdentityVisitor type_and_name_visitor;
-  //for (auto& resolved_entry : resolved_entries) {
-  //  auto type_and_name(boost::apply_visitor(type_and_name_visitor, resolved_entry.key.first));
-  //  nfs::Message::Data data(type_and_name.first, type_and_name.second, NonEmptyString(), Action);
-  //  nfs::Message meassage(nfs::Persona::kMetadataManager,
-  //                        nfs::PersonaId(nfs::Persona::kPmidAccountHolder, routing_.kNodeId()),
-  //                        data,
-  //                        pmid_name);
-  //  message.
-  //}
+  /*for (auto& resolved_entry : resolved_entries) {
+    
+    
+  }*/
 }
 
 }  // namespace vault

@@ -52,6 +52,10 @@ void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
   nfs::Reply reply(CommonErrors::success);
   nfs::MessageAction action(message.data().action);
   switch (action) {
+    case nfs::MessageAction::kCreatePmidAccount:
+      return CreatePmidAccount(message);
+    case nfs::MessageAction::kGetPmidTotals:
+      return GetPmidTotals(message);
     case nfs::MessageAction::kSynchronise:
       return HandleSync(message);
     case nfs::MessageAction::kAccountTransfer:
@@ -60,8 +64,6 @@ void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
       return;
     case nfs::MessageAction::kNodeUp:
       return;
-    case nfs::MessageAction::kGetPmidTotals:
-      return HandleGetPmidTotals(message, reply_functor);
     default:
       LOG(kError) << "Unhandled Post action type";
   }
@@ -70,27 +72,35 @@ void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
   reply_functor(reply.Serialise()->string());
 }
 
-void PmidAccountHolderService::HandleGetPmidTotals(const nfs::Message& message,
-                                                   const routing::ReplyFunctor& reply_functor) {
+void PmidAccountHolderService::CreatePmidAccount(const nfs::Message& message) {
   try {
-    PmidRecord pmid_record(pmid_account_handler_.GetPmidRecord(PmidName(message.data().name)));
-    if (!pmid_record.pmid_name.data.string().empty())
-      nfs::Reply reply(CommonErrors::success, pmid_record.Serialise());
-      // send it...
-      // nfs_.
+    pmid_account_handler_.CreateAccount(message.data_holder());
   }
   catch(const maidsafe_error& error) {
-    detail::AddResult(message, reply_functor, error, accumulator_, accumulator_mutex_,
-                      kDeleteRequestsRequired_);
+    LOG(kWarning) << error.what();
   }
   catch(...) {
-    detail::AddResult(message, reply_functor, MakeError(CommonErrors::unknown),
-                      accumulator_, accumulator_mutex_, kDeleteRequestsRequired_);
+    LOG(kError) << "Unknown error.";
+  }
+}
+
+void PmidAccountHolderService::GetPmidTotals(const nfs::Message& message) {
+  try {
+    PmidRecord pmid_record(pmid_account_handler_.GetPmidRecord(PmidName(message.data().name)));
+    if (!pmid_record.pmid_name.data.string().empty()) {
+      nfs::Reply reply(CommonErrors::success, pmid_record.Serialise());
+      nfs_.ReturnPmidTotals(message.source().node_id, reply.Serialise());
+    }
+  }
+  catch(const maidsafe_error& error) {
+    LOG(kWarning) << error.what();
+  }
+  catch(...) {
+    LOG(kWarning) << "Unknown error.";
   }
 }
 
 void PmidAccountHolderService::HandleChurnEvent(routing::MatrixChange matrix_change) {
-//  CheckAccounts();
   auto account_names(pmid_account_handler_.GetAccountNames());
   auto itr(std::begin(account_names));
   while (itr != std::end(account_names)) {

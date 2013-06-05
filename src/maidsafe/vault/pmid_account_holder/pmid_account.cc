@@ -206,8 +206,20 @@ void PmidAccount::IncrementSyncAttempts() {
   sync_.IncrementSyncAttempts();
 }
 
-PmidRecord PmidAccount::GetPmidRecord() {
+PmidRecord PmidAccount::pmid_record() const {
   return pmid_record_;
+}
+
+PmidAccount::name_type PmidAccount::name() const {
+  return pmid_name_;
+}
+
+PmidAccount::DataHolderStatus PmidAccount::data_holder_status() const {
+  return data_holder_status_;
+}
+
+int64_t PmidAccount::total_data_stored_by_pmids() const {
+  return pmid_record_.stored_total_size;
 }
 
 }  // namespace vault

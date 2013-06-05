@@ -25,7 +25,6 @@
 
 #include "maidsafe/vault/utils.h"
 
-
 namespace maidsafe {
 
 namespace vault {
@@ -42,10 +41,10 @@ void StructuredDataManagerService::HandleMessage(const nfs::Message& message,
       return reply_functor(reply.Serialise()->string());
   }
 
-   if (message.data().action == nfs::MessageAction::kSynchronise)
-     return HandleSync(message);   // No accumulate
-   if (message.data().action == nfs::MessageAction::kAccountTransfer)
-     return HandleAccountTransfer(message);   // No accumulate
+   if (message.data().action == nfs::MessageAction::kSynchronise ||
+       message.data().action == nfs::MessageAction::kAccountTransfer)
+     return HandleSynchronise(message);   // No accumulate
+
    if (message.data().action == nfs::MessageAction::kGet)
      return HandleGet(message, reply_functor);  //  Add to accumulator on action
    if (message.data().action == nfs::MessageAction::kGetBranch)
@@ -53,16 +52,18 @@ void StructuredDataManagerService::HandleMessage(const nfs::Message& message,
 
    if (message.data().action != nfs::MessageAction::kPut &&
        message.data().action != nfs::MessageAction::kDeleteBranchUntilFork &&
-       message.data().action != nfs::MessageAction::kDelete)
+       message.data().action != nfs::MessageAction::kDelete &&
+       message.data().action != nfs::MessageAction::kAccountTransfer)
      ThrowError(CommonErrors::invalid_parameter);
 
    // accumulate then action, on completion then set reply
    std::lock_guard<std::mutex> lock(accumulator_mutex_);
-   if (!accumulator_.PushSingleResult(message,
-                                     reply_functor,
-                                     maidsafe_error(CommonErrors::pending_result)).size() <
-                                     routing::Parameters::node_group_size -1) {
-     Sync<Data>(message);
+   if (!accumulator_.PushSingleResult(
+         message,
+         reply_functor,
+         nfs::Reply(maidsafe_error(CommonErrors::pending_result))).size() <
+         routing::Parameters::node_group_size -1U) {
+     Synchronise<Data>(message);
    }
 }
 

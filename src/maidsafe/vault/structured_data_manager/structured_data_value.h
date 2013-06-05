@@ -14,6 +14,7 @@
 
 #include "boost/optional.hpp"
 
+#include "maidsafe/nfs/message.h"
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/data_types/structured_data_versions.h"
 

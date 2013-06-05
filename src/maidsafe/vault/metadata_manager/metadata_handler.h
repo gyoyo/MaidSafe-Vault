@@ -22,7 +22,7 @@
 
 #include "maidsafe/vault/metadata_manager/metadata.h"
 #include "maidsafe/vault/metadata_manager/metadata_helpers.h"
-#include "maidsafe/vault/metadata_manager/metadata_db.h"
+#include "maidsafe/vault/manager_db.h"
 #include "maidsafe/vault/metadata_manager/metadata.pb.h"
 #include "maidsafe/vault/metadata_manager/metadata_merge_policy.h"
 #include "maidsafe/vault/sync.h"
@@ -83,9 +83,10 @@ class MetadataHandler {
   template<typename Data>
   bool CheckMetadataExists(const typename Data::name_type& data_name) const;
 
-  // Returns cost, checks for duplication of unique data (throws)
+  // Returns a pair of - is duplicate data and its cost.
+  // Checks for duplication of unique data (throws)
   template<typename Data>
-  int32_t CheckPut(const typename Data::name_type& data_name, int32_t data_size);
+  std::pair<bool, int32_t> CheckPut(const typename Data::name_type& data_name, int32_t data_size);
 
   void AddLocalUnresolvedEntry(const MetadataUnresolvedEntry& unresolved_entry);
 
@@ -107,7 +108,7 @@ class MetadataHandler {
 
  private:
   const boost::filesystem::path kMetadataRoot_;
-  std::unique_ptr<MetadataDb> metadata_db_;
+  std::unique_ptr<ManagerDb<MetadataManager>> metadata_db_;
   const NodeId kThisNodeId_;
   mutable std::mutex mutex_;
   Sync<MetadataMergePolicy> sync_;

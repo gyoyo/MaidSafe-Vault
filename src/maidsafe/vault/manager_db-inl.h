@@ -9,8 +9,10 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
+#ifndef MAIDSAFE_VAULT_MANAGER_DB_INL_H_
+#define MAIDSAFE_VAULT_MANAGER_DB_INL_H_
 
-#include "maidsafe/vault/metadata_manager/metadata_db.h"
+#include "maidsafe/vault/manager_db.h"
 
 #include <iomanip>
 #include <sstream>
@@ -21,16 +23,19 @@
 #include "maidsafe/passport/types.h"
 #include "maidsafe/data_types/data_name_variant.h"
 #include "maidsafe/data_types/data_type_values.h"
+#include "maidsafe/vault/utils.h"
 
 namespace maidsafe {
 namespace vault {
 
-const uint32_t MetadataDb::kSuffixWidth_(2);
+template<typename PersonaType>
+const int ManagerDb<PersonaType>::kSuffixWidth_(1);
 
-MetadataDb::MetadataDb(const boost::filesystem::path& path)
-  : kDbPath_(path),
-    mutex_(),
-    leveldb_() {
+template<typename PersonaType>
+ManagerDb<PersonaType>::ManagerDb(const boost::filesystem::path& path)
+    : kDbPath_(path),
+      mutex_(),
+      leveldb_() {
   if (boost::filesystem::exists(kDbPath_))
     boost::filesystem::remove_all(kDbPath_);
   leveldb::DB* db;
@@ -44,46 +49,46 @@ MetadataDb::MetadataDb(const boost::filesystem::path& path)
   assert(leveldb_);
 }
 
-MetadataDb::~MetadataDb() {
+template<typename PersonaType>
+ManagerDb<PersonaType>::~ManagerDb() {
   leveldb::DestroyDB(kDbPath_.string(), leveldb::Options());
 }
 
-void MetadataDb::Put(const KvPair& key_value_pair) {
-  auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key_value_pair.first));
-  std::string db_key(result.second.string() +
-                     Pad<kSuffixWidth_>(static_cast<uint32_t>(result.first)));
+template<typename PersonaType>
+void ManagerDb<PersonaType>::Put(const KvPair& key_value_pair) {
+
   leveldb::Status status(leveldb_->Put(leveldb::WriteOptions(),
-                                       db_key, key_value_pair.second.string()));
+                                       SerialiseDbKey<PersonaType>(key_value_pair.first),
+                                       key_value_pair.second.Serialise()->string()));
   if (!status.ok())
     ThrowError(VaultErrors::failed_to_handle_request);
 }
 
-void MetadataDb::Delete(const DataNameVariant& key) {
-  auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key));
-  std::string db_key(result.second.string() +
-                     Pad<kSuffixWidth_>(static_cast<uint32_t>(result.first)));
-  leveldb::Status status(leveldb_->Delete(leveldb::WriteOptions(), db_key));
+template<typename PersonaType>
+void ManagerDb<PersonaType>::Delete(const typename PersonaType::DbKey& key) {
+  leveldb::Status status(leveldb_->Delete(leveldb::WriteOptions(),
+                                          SerialiseDbKey<PersonaType>(key)));
   if (!status.ok())
     ThrowError(VaultErrors::failed_to_handle_request);
 }
 
-NonEmptyString MetadataDb::Get(const DataNameVariant& key) {
-  auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key));
-  std::string db_key(result.second.string() +
-                     Pad<kSuffixWidth_>(static_cast<uint32_t>(result.first)));
+template<typename PersonaType>
+typename PersonaType::DbValue ManagerDb<PersonaType>::Get(const typename PersonaType::DbKey& key) {
   leveldb::ReadOptions read_options;
   read_options.verify_checksums = true;
   std::string value;
-  leveldb::Status status(leveldb_->Get(read_options, db_key, &value));
+  leveldb::Status status(leveldb_->Get(read_options, SerialiseDbKey<PersonaType>(key), &value));
   if (!status.ok())
     ThrowError(VaultErrors::failed_to_handle_request);
   assert(!value.empty());
-  return NonEmptyString(value);
+  return typename PersonaType::DbValue(typename PersonaType::DbValue::serialised_type(
+                                         NonEmptyString(value)));
 }
 
 
 // TODO(Team) This can be optimise by returning iterators.
-std::vector<DataNameVariant> MetadataDb::GetKeys() {
+template<typename PersonaType>
+std::vector<typename PersonaType::DbKey> ManagerDb<PersonaType>::GetKeys() {
   std::vector<DataNameVariant> return_vector;
   std::lock_guard<std::mutex> lock(mutex_);
   std::unique_ptr<leveldb::Iterator> iter(leveldb_->NewIterator(leveldb::ReadOptions()));
@@ -97,12 +102,31 @@ std::vector<DataNameVariant> MetadataDb::GetKeys() {
   return return_vector;
 }
 
-template<uint32_t Width>
-std::string MetadataDb::Pad(uint32_t number) {
-  std::ostringstream osstream;
-  osstream << std::setw(Width) << std::setfill('0') << std::hex << number;
-  return osstream.str();
+// Workaround for gcc 4.6 bug related to warning "redundant redeclaration" for template
+// specialisation. refer // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15867#c4
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
+
+template<>
+std::vector<StructuredDataManager::DbKey> ManagerDb<StructuredDataManager>::GetKeys();
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
+
+template<typename PersonaType>
+std::string ManagerDb<PersonaType>::GetSerialisedKey(const typename PersonaType::DbKey& key) const {
+  static GetTagValueAndIdentityVisitor visitor;
+  auto result(boost::apply_visitor(visitor, key));
+  return std::string(result.second.string() +
+                     detail::Pad<kSuffixWidth_>(static_cast<uint32_t>(result.first)));
 }
+
 
 }  // namespace vault
 }  // namespace maidsafe
+
+#endif // MAIDSAFE_VAULT_MANAGER_DB_INL_H_

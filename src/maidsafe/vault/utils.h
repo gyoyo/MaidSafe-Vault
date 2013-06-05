@@ -28,7 +28,62 @@
 
 namespace maidsafe {
 
+namespace nfs {
+
+template<>
+struct PersonaTypes<Persona::kStructuredDataManager> {
+  typedef std::pair<DataNameVariant, Identity> DbKey;
+//  typedef NonEmptyString SerialisedDbKey;
+  typedef StructuredDataVersions DbValue;
+  struct UnresolvedEntryKey {
+    DbKey db_key;
+    MessageAction action;
+  };
+ static const Persona persona = Persona::kStructuredDataManager;
+};
+
+}  // namespace nfs
+
+
 namespace vault {
+
+namespace detail {
+
+void InitialiseDirectory(const boost::filesystem::path& directory);
+bool ShouldRetry(routing::Routing& routing, const nfs::Message& message);
+
+template<typename Data>
+bool IsDataElement(const typename Data::name_type& name,
+                   const DataNameVariant& data_name_variant);
+
+void SendReply(const nfs::Message& original_message,
+               const maidsafe_error& return_code,
+               const routing::ReplyFunctor& reply_functor);
+
+template<typename AccountSet, typename Account>
+typename Account::serialised_type GetSerialisedAccount(
+    std::mutex& mutex,
+    const AccountSet& accounts,
+    const typename Account::name_type& account_name);
+
+template<typename AccountSet, typename Account>
+typename Account::serialised_info_type GetSerialisedAccountSyncInfo(
+    std::mutex& mutex,
+    const AccountSet& accounts,
+    const typename Account::name_type& account_name);
+// Returns true if the required successful request count has been reached
+template<typename Accumulator>
+bool AddResult(const nfs::Message& message,
+               const routing::ReplyFunctor& reply_functor,
+               const maidsafe_error& return_code,
+               Accumulator& accumulator,
+               std::mutex& accumulator_mutex,
+               int requests_required);
+
+template<int width>
+std::string Pad(uint32_t number);
+
+}  // namespace detail
 
 struct CheckHoldersResult {
   std::vector<NodeId> new_holders;
@@ -73,42 +128,27 @@ inline bool FromDataGetter(const Message& message);
 template<typename Message>
 inline bool FromStructuredDataManager(const nfs::Message& message);
 
-namespace detail {
 
-void InitialiseDirectory(const boost::filesystem::path& directory);
+template<typename Persona>
+typename Persona::DbKey GetKeyFromMessage(const nfs::Message& message) {
+  if (!message.data().type)
+    ThrowError(CommonErrors::parsing_error);
+  return GetDataNameVariant(*message.data().type, message.data().name);
+}
 
-bool ShouldRetry(routing::Routing& routing, const nfs::Message& message);
+template<>
+typename StructuredDataManager::DbKey
+         GetKeyFromMessage<StructuredDataManager>(const nfs::Message& message);
 
-template<typename Data>
-bool IsDataElement(const typename Data::name_type& name,
-                   const DataNameVariant& data_name_variant);
+template<typename Persona>
+std::string SerialiseDbKey(const typename Persona::DbKey& key) {
+  auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key));
+  return std::string(result.second.string() + detail::Pad<1>(static_cast<uint32_t>(result.first)));
+}
 
-void SendReply(const nfs::Message& original_message,
-               const maidsafe_error& return_code,
-               const routing::ReplyFunctor& reply_functor);
-
-template<typename AccountSet, typename Account>
-typename Account::serialised_type GetSerialisedAccount(
-    std::mutex& mutex,
-    const AccountSet& accounts,
-    const typename Account::name_type& account_name);
-
-template<typename AccountSet, typename Account>
-typename Account::serialised_info_type GetSerialisedAccountSyncInfo(
-    std::mutex& mutex,
-    const AccountSet& accounts,
-    const typename Account::name_type& account_name);
-
-// Returns true if the required successful request count has been reached
-template<typename Accumulator>
-bool AddResult(const nfs::Message& message,
-               const routing::ReplyFunctor& reply_functor,
-               const maidsafe_error& return_code,
-               Accumulator& accumulator,
-               std::mutex& accumulator_mutex,
-               int requests_required);
-
-}  // namespace detail
+template<>
+std::string SerialiseDbKey<StructuredDataManager>(
+    const typename StructuredDataManager::DbKey& key);
 
 }  // namespace vault
 

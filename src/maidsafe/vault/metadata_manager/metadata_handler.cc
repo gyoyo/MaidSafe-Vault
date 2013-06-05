@@ -41,7 +41,7 @@ MetadataHandler::MetadataHandler(const fs::path& vault_root_dir, const NodeId &t
                        detail::InitialiseDirectory(path);
                        return path;
                      } ()),
-      metadata_db_(new MetadataDb(kMetadataRoot_)),
+      metadata_db_(new ManagerDb<MetadataManager>(kMetadataRoot_)),
       kThisNodeId_(this_node_id),
       mutex_(),
       sync_(metadata_db_.get(), kThisNodeId_) {
@@ -64,6 +64,9 @@ std::vector<DataNameVariant> MetadataHandler::GetRecordNames() const {
 void MetadataHandler::ReplaceNodeInSyncList(const DataNameVariant& /*record_name*/,  //FIXME in Sync
                                             const NodeId& old_node, const NodeId& new_node) {
   // FIXME(Prakash) Need to pass record_name to sync
+  // or have sync test whenther new node should be managing the 'account'
+    // we can use the routing IsResponsibleFor(account_name, node_name) test I think
+    // This is a bit of work but same test will be required for account transfer
   sync_.ReplaceNode(old_node, new_node);
 }
 
@@ -81,14 +84,19 @@ void MetadataHandler::ApplySyncData(const NonEmptyString& serialised_unresolved_
 
 MetadataHandler::serialised_record_type MetadataHandler::GetSerialisedRecord(
     const DataNameVariant& data_name) {
-  protobuf::MetadataRecord proto_record;
-  proto_record.set_serialised_metadata_value(metadata_db_->Get(data_name).string());
+  protobuf::UnresolvedEntries proto_unresolved_entries;
+  auto metadata_value(metadata_db_->Get(data_name));
+  MetadataUnresolvedEntry unresolved_entry_db_value(
+      std::make_pair(data_name, nfs::MessageAction::kAccountTransfer), metadata_value,
+        kThisNodeId_);
   auto unresolved_data(sync_.GetUnresolvedData(data_name));
+  unresolved_data.push_back(unresolved_entry_db_value);
   for (const auto& unresolved_entry : unresolved_data) {
-    proto_record.add_serialised_unresolved_entry(unresolved_entry.Serialise()->string());
+    proto_unresolved_entries.add_serialised_unresolved_entry(
+        unresolved_entry.Serialise()->string());
   }
-  assert(proto_record.IsInitialized());
-  return serialised_record_type(NonEmptyString(proto_record.SerializeAsString()));
+  assert(proto_unresolved_entries.IsInitialized());
+  return serialised_record_type(NonEmptyString(proto_unresolved_entries.SerializeAsString()));
 }
 
 //void MetadataHandler::PutMetadata(const protobuf::Metadata& /*proto_metadata*/) {

@@ -21,6 +21,8 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/on_scope_exit.h"
 
+#include "maidsafe/vault/accumulator.h"
+#include "maidsafe/vault/maid_account_holder/maid_account.pb.h"
 #include "maidsafe/vault/metadata_manager/metadata_helpers.h"
 #include "maidsafe/vault/metadata_manager/metadata.pb.h"
 #include "maidsafe/vault/sync.pb.h"
@@ -45,6 +47,17 @@ MetadataUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
       std::make_pair(GetDataNameVariant(DataTagValue(message.data().type.get()),
                                         Identity(message.data().name)), Action),
       metadata_value, this_id);
+}
+
+template<typename Accumulator>
+bool AddMetadataPutResult(const nfs::Message& /*message*/,  // FIXME rename
+                          const routing::ReplyFunctor& /*reply_functor*/,
+                          const nfs::Reply& /*reply*/,
+                          Accumulator& /*accumulator*/,
+                          std::mutex& /*accumulator_mutex*/,
+                          int /*requests_required*/) {
+  //FIXME(Prakash): Implement merge cost here
+  return false;
 }
 
 }  // namespace detail
@@ -74,18 +87,19 @@ void MetadataManagerService::HandleMessage(const nfs::Message& message,
   switch (message.data().action) {
     case nfs::MessageAction::kPut:
       return HandlePut<Data>(message, reply_functor);
+    case nfs::MessageAction::kPutResult:
+      return HandlePutResult<Data>(message);
     case nfs::MessageAction::kGet:
       return HandleGet<Data>(message, reply_functor);
     case nfs::MessageAction::kDelete:
       return HandleDelete<Data>(message, reply_functor);
     case nfs::MessageAction::kSynchronise:
-      return HandleSync(message);
     case nfs::MessageAction::kAccountTransfer:
-      return HandleRecordTransfer<Data>(message);
+      return HandleSync(message);
     default: {
       reply = nfs::Reply(VaultErrors::operation_not_supported, message.Serialise().data);
       std::lock_guard<std::mutex> lock(accumulator_mutex_);
-      accumulator_.SetHandled(message, reply.error());
+      accumulator_.SetHandled(message, reply);
       reply_functor(reply.Serialise()->string());
     }
   }
@@ -100,13 +114,14 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
               typename Data::serialised_type(message.data().content));
     auto data_name(data.name());
     auto data_size(static_cast<int32_t>(message.data().content.string().size()));
-    //FIXME(Prakash) get cost
-    metadata_handler_.template CheckPut<Data>(data_name, data_size);
-    // FIXME (Prakash) Need to update accumulator to accomodate cost
-    if (detail::AddResult(message, reply_functor, MakeError(CommonErrors::success),
-                          accumulator_, accumulator_mutex_, kPutRequestsRequired_)) {
-//FIXME (Prakash)      if (cost ==  new_data_cost) {  // discuss
-      if (metadata_handler_.template CheckMetadataExists<Data>(data_name)) {
+    auto is_duplicate_and_cost(metadata_handler_.template CheckPut<Data>(data_name, data_size));
+    protobuf::Cost proto_cost;
+    proto_cost.set_cost(is_duplicate_and_cost.second);
+    assert(proto_cost.IsInitialized());
+    nfs::Reply reply(CommonErrors::success, NonEmptyString(proto_cost.SerializeAsString()));
+    if (detail::AddMetadataPutResult(message, reply_functor, reply, accumulator_,
+                                     accumulator_mutex_, kPutRequestsRequired_)) {
+      if (is_duplicate_and_cost.first) {  // No need to store data on DH
         MetadataValue metadata_value(data_size);
         AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message, metadata_value);
       } else {
@@ -119,18 +134,48 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
     }
   }
   catch(const maidsafe_error& error) {
-    detail::AddResult(message, reply_functor, error, accumulator_, accumulator_mutex_,
-                      kPutRequestsRequired_);
+    detail::AddMetadataPutResult(message, reply_functor, nfs::Reply(error), accumulator_,
+                                 accumulator_mutex_, kPutRequestsRequired_);
   }
   catch(...) {
-    detail::AddResult(message, reply_functor, MakeError(CommonErrors::unknown),
-                      accumulator_, accumulator_mutex_, kPutRequestsRequired_);
+    detail::AddMetadataPutResult(message, reply_functor, nfs::Reply(CommonErrors::unknown),
+                                 accumulator_, accumulator_mutex_, kPutRequestsRequired_);
   }
 }
 
 template<typename Data>
 void MetadataManagerService::Put(const Data& data, const PmidName& target_data_holder) {
   nfs_.Put(target_data_holder, data, nullptr);
+}
+
+template<typename Data>
+void MetadataManagerService::HandlePutResult(const nfs::Message& message) {
+  try {
+    ValidatePutResultSender(message);
+    // FIXME: Need to adjust accumulator to identify/accumulate message from PAHs of a given DH
+    if (detail::AddResult(message, nullptr, MakeError(CommonErrors::success),
+                          accumulator_, accumulator_mutex_, kPutRequestsRequired_)) {
+      protobuf::PutResult proto_put_result;
+      if (!proto_put_result.ParseFromString(message.data().content.string()))
+        ThrowError(CommonErrors::parsing_error);
+      if (proto_put_result.result()) {
+        // Create record
+        int32_t data_size(proto_put_result.data_size());
+        MetadataValue metadata_value(data_size);
+        AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message, metadata_value);
+      } else {
+        // FIXME need a record failure nodes vector to workout when we need to retry on different data holder
+        Data data(typename Data::name_type(message.data().name),
+                  typename Data::serialised_type(
+                    NonEmptyString(proto_put_result.serialised_data())));
+        PmidName target_data_holder(Identity(routing_.RandomConnectedNode().string()));
+        Put(data, target_data_holder);
+      }
+    }
+  }
+  catch(const maidsafe_error& error) {
+    LOG(kWarning) << "Error during HandlePutResult: " << error.what();
+  }
 }
 
 template<typename Data>
@@ -306,11 +351,6 @@ void MetadataManagerService::Sync(const typename Data::name_type& data_name) {
   nfs_.Sync<Data>(data_name, serialised_sync_data);
   // TODO(Fraser#5#): 2013-05-03 - Check this is correct place to increment sync attempt counter.
   metadata_handler_.IncrementSyncAttempts<Data>(data_name);
-}
-
-// =============== Record transfer =================================================================
-template<typename Data>
-void MetadataManagerService::HandleRecordTransfer(const nfs::Message& /*message*/) {
 }
 
 }  // namespace vault

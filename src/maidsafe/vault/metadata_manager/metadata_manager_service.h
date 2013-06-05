@@ -76,7 +76,8 @@ class MetadataManagerService {
   void HandlePut(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
   void Put(const Data& data, const PmidName& target_data_holder);
-
+  template<typename Data>
+  void HandlePutResult(const nfs::Message& message);
   template<typename Data>
   void HandleGet(nfs::Message message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
@@ -91,7 +92,7 @@ class MetadataManagerService {
   void ValidateGetSender(const nfs::Message& message) const;
   void ValidateDeleteSender(const nfs::Message& message) const;
   void ValidatePostSender(const nfs::Message& message) const;
-
+  void ValidatePutResultSender(const nfs::Message& message) const;
   void HandleNodeDown(const nfs::Message& message);
   void HandleNodeUp(const nfs::Message& message);
 
@@ -109,16 +110,11 @@ class MetadataManagerService {
   void AddLocalUnresolvedEntryThenSync(const nfs::Message& message,
                                        const MetadataValue& metadata_value);
 
-  // =============== Sync ==========================================================================
+  // =============== Sync and Record transfer =====================================================
   template<typename Data>
   void Sync(const typename Data::name_type& data_name);
-
   void HandleSync(const nfs::Message& message);
-
-  // =============== Record transfer ===============================================================
   void TransferRecord(const DataNameVariant& record_name, const NodeId& new_node);
-  template<typename Data>
-  void HandleRecordTransfer(const nfs::Message& message);
 
   routing::Routing& routing_;
   nfs::PublicKeyGetter& public_key_getter_;

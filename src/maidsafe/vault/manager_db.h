@@ -9,8 +9,8 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_DB_H_
-#define MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_DB_H_
+#ifndef MAIDSAFE_VAULT_MANAGER_DB_H_
+#define MAIDSAFE_VAULT_MANAGER_DB_H_
 
 #include <string>
 #include <utility>
@@ -22,30 +22,33 @@
 
 #include "maidsafe/common/types.h"
 #include "maidsafe/data_types/data_name_variant.h"
+#include "maidsafe/nfs/types.h"
+#include "maidsafe/vault/types.h"
 
 namespace maidsafe {
 namespace vault {
 
-class MetadataDb {
+template<typename PersonaType>
+class ManagerDb {
  public:
-  typedef std::pair<DataNameVariant, NonEmptyString> KvPair;
-  explicit MetadataDb(const boost::filesystem::path& path);
-  ~MetadataDb();
+  typedef std::pair<typename PersonaType::DbKey ,typename PersonaType::DbValue> KvPair;
+  explicit ManagerDb(const boost::filesystem::path& path);
+  ~ManagerDb();
 
-  NonEmptyString Get(const DataNameVariant& key);
+  typename PersonaType::DbValue Get(const typename PersonaType::DbKey& key);
   void Put(const KvPair& key_value_pair);
-  void Delete(const DataNameVariant& key);
-  std::vector<DataNameVariant> GetKeys();
+  void Delete(const typename PersonaType::DbKey& key);
+  std::vector<typename PersonaType::DbKey> GetKeys();
 
  private:
-  MetadataDb(const MetadataDb&);
-  MetadataDb& operator=(const MetadataDb&);
-  MetadataDb(MetadataDb&&);
-  MetadataDb& operator=(MetadataDb&&);
+  ManagerDb(const ManagerDb&);
+  ManagerDb& operator=(const ManagerDb&);
+  ManagerDb(ManagerDb&&);
+  ManagerDb& operator=(ManagerDb&&);
 
-  template<uint32_t Width> std::string Pad(uint32_t number);
+  std::string GetSerialisedKey(const typename PersonaType::DbKey& key) const;
 
-  static const uint32_t kSuffixWidth_;
+  static const int kSuffixWidth_;
   const boost::filesystem::path kDbPath_;
   mutable std::mutex mutex_;
   std::unique_ptr<leveldb::DB> leveldb_;
@@ -54,4 +57,6 @@ class MetadataDb {
 }  // namespace vault
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_DB_H_
+#include "maidsafe/vault/manager_db-inl.h"
+
+#endif  // MAIDSAFE_VAULT_MANAGER_DB_H_

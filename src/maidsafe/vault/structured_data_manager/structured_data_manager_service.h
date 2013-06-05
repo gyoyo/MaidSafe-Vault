@@ -21,15 +21,17 @@
 #include "maidsafe/passport/types.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/nfs/message.h"
-#include "maidsafe/nfs/public_key_getter.h"
+#include "maidsafe/nfs/types.h"
 #include "maidsafe/nfs/persona_id.h"
 #include "maidsafe/vault/accumulator.h"
 #include "maidsafe/vault/db.h"
+#include "maidsafe/vault/sync.h"
 #include "maidsafe/vault/sync.pb.h"
 #include "maidsafe/vault/types.h"
 #include "maidsafe/vault/structured_data_manager/structured_data_key.h"
 #include "maidsafe/vault/structured_data_manager/structured_data_value.h"
-#include "maidsafe/vault/structured_data_manager/structured_data_db.h"
+#include "maidsafe/vault/structured_data_manager/structured_data_merge_policy.h"
+#include "maidsafe/vault/manager_db.h"
 
 
 namespace maidsafe {
@@ -38,12 +40,9 @@ namespace vault {
 
 class StructuredDataManagerService {
  public:
-  typedef std::pair<Identity, Identity> AccountName;
-  typedef std::pair<DataNameVariant, nfs::PersonaId> SDMKey;
   typedef Identity StructuredDataAccountName;
   StructuredDataManagerService(const passport::Pmid& pmid,
                                routing::Routing& routing,
-                               nfs::PublicKeyGetter& public_key_getter,
                                const boost::filesystem::path& path);
   template<typename Data>
   void HandleMessage(const nfs::Message& message,
@@ -58,36 +57,30 @@ class StructuredDataManagerService {
 
   void ValidateClientSender(const nfs::Message& message) const;
   void ValidateSyncSender(const nfs::Message& message) const;
-  StructuredDataDb::Key GetKeyFromMessage(const nfs::Message& message) const;
-  //// =============== Put/Delete data ===============================================================
+  std::vector<StructuredDataVersions::VersionName>
+                       GetVersionsFromMessage(const nfs::Message& msg) const;
+  //// =============== Get data ====================================================================
 
-  void HandlePut(const nfs::Message& message, routing::ReplyFunctor reply_functor);
-  void HandleDeleteBranchUntilFork(const nfs::Message& message,
-                                   routing::ReplyFunctor reply_functor);
   void HandleGet(const nfs::Message& message, routing::ReplyFunctor reply_functor);
   void HandleGetBranch(const nfs::Message& message, routing::ReplyFunctor reply_functor);
 
-  void AddToAccumulator(const nfs::Message& message);
-
-//   template<typename Data, nfs::MessageAction action>
-//   void AddLocalUnresolvedEntryThenSync(const nfs::Message& message, int32_t cost);
-
-  //// =============== Sync ==========================================================================
+  //// =============== Sync ========================================================================
   template<typename Data>
-  void Sync(const nfs::Message&);
-  void HandleSync(const nfs::Message& message);
+  void Synchronise(const nfs::Message& message);
+  void HandleSynchronise(const nfs::Message& message);
 
-  //// =============== Account transfer ==============================================================
-  //void TransferAccount(const MaidName& account_name, const NodeId& new_node);
+  //// =============== Churn ============================================================
+  void HandleChurnEvent(const NodeId& old_node, const NodeId& new_node);
   void HandleAccountTransfer(const nfs::Message& message);
 
   routing::Routing& routing_;
-  nfs::PublicKeyGetter& public_key_getter_;
   std::mutex accumulator_mutex_;
-  AccountName account_name_;
+  std::mutex sync_mutex_;
   Accumulator<StructuredDataAccountName> accumulator_;
-  StructuredDataDb structured_data_db_;
-  DataHolderNfs nfs_;
+  ManagerDb<StructuredDataManager> structured_data_db_;
+  const NodeId kThisNodeId_;
+  Sync<StructuredDataMergePolicy> sync_;
+  StructuredDataManagerNfs nfs_;
 };
 
 }  // namespace vault

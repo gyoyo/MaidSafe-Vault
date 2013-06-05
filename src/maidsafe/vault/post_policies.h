@@ -129,9 +129,9 @@ class MaidAccountHolderMiscellaneousPolicy {
   const passport::Pmid kPmid_;
 };
 
-class MetadataManagerMiscellaneousPolicy {
+class ManagerMiscellaneousPolicy {
  public:
-  MetadataManagerMiscellaneousPolicy(routing::Routing& routing, const passport::Pmid& pmid)
+  ManagerMiscellaneousPolicy(routing::Routing& routing, const passport::Pmid& pmid)
       : routing_(routing),
         kSource_(nfs::Persona::kMaidAccountHolder, routing_.kNodeId()),
         kPmid_(pmid) {}
@@ -188,13 +188,16 @@ typedef VaultPostPolicy<HoldersSyncPolicy<nfs::Persona::kMaidAccountHolder>,
                         MaidAccountHolderMiscellaneousPolicy> MaidAccountHolderPostPolicy;
 
 typedef VaultPostPolicy<ManagersSyncPolicy<nfs::Persona::kMetadataManager>,
-                        MetadataManagerMiscellaneousPolicy> MetadataManagerPostPolicy;
+                        ManagerMiscellaneousPolicy> MetadataManagerPostPolicy;
 
 typedef VaultPostPolicy<HoldersSyncPolicy<nfs::Persona::kPmidAccountHolder>,
                         PmidAccountHolderMiscellaneousPolicy> PmidAccountHolderPostPolicy;
 // FIXME
 typedef VaultPostPolicy<HoldersSyncPolicy<nfs::Persona::kDataHolder>,
                         DataHolderMiscellaneousPolicy> DataHolderPostPolicy;
+
+typedef VaultPostPolicy<ManagersSyncPolicy<nfs::Persona::kStructuredDataManager>,
+                        ManagerMiscellaneousPolicy> StructuredDataManagerPostPolicy;
 
 }  // namespace vault
 

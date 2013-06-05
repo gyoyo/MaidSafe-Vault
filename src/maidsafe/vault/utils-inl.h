@@ -13,6 +13,7 @@
 #define MAIDSAFE_VAULT_UTILS_INL_H_
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 #include <set>
 
@@ -102,7 +103,8 @@ bool AddResult(const nfs::Message& message,
   maidsafe_error overall_return_code(CommonErrors::success);
   {
     std::lock_guard<std::mutex> lock(accumulator_mutex);
-    auto pending_results(accumulator.PushSingleResult(message, reply_functor, return_code));
+    auto pending_results(accumulator.PushSingleResult(message, reply_functor,
+                                                      nfs::Reply(return_code)));
     if (static_cast<int>(pending_results.size()) < requests_required)
       return false;
 
@@ -111,7 +113,7 @@ bool AddResult(const nfs::Message& message,
       return false;
 
     overall_return_code = (*result.first).error();
-    pending_requests = accumulator.SetHandled(message, overall_return_code);
+    pending_requests = accumulator.SetHandled(message, nfs::Reply(overall_return_code));
   }
 
   for (auto& pending_request : pending_requests)
@@ -120,6 +122,31 @@ bool AddResult(const nfs::Message& message,
   return true;
 }
 
+template<int width>
+std::string Pad(uint32_t number) {
+  static_assert(width > 0 && width < 5, "width must be 1, 2, 3, or 4.");
+  assert(number < std::pow(256, width));
+  std::string result(width, 0);
+  for (int i(0); i != width; ++i) {
+    result[width - i - 1] = static_cast<char>(number);
+    number /= 256;
+  }
+  return result;
+}
+
+// Workaround for gcc 4.6 bug related to warning "redundant redeclaration" for template
+// specialisation. refer // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15867#c4
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
+
+template<>
+std::string Pad<1>(uint32_t number);
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
 
 }  // namespace detail
 

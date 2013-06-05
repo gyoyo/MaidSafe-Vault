@@ -16,7 +16,7 @@
 #include "boost/filesystem/operations.hpp"
 
 #include "maidsafe/common/types.h"
-
+#include "maidsafe/nfs/types.h"
 #include "maidsafe/vault/parameters.h"
 
 
@@ -80,6 +80,27 @@ CheckHoldersResult CheckHolders(const routing::MatrixChange& matrix_change,
   return holders_result;
 }
 
+template<>
+typename StructuredDataManager::DbKey
+         GetKeyFromMessage<StructuredDataManager>(const nfs::Message& message) {
+  if (!message.data().type)
+    ThrowError(CommonErrors::parsing_error);
+  return std::make_pair(GetDataNameVariant(*message.data().type, message.data().name),
+                        message.data().originator);
+}
+
+
+template<>
+std::string SerialiseDbKey<StructuredDataManager>(
+    const typename StructuredDataManager::DbKey& key) {
+  auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key.first));
+  std::string db_key(result.second.string() +
+                     detail::Pad<1>(static_cast<uint32_t>(result.first)) +
+                     key.second.string());
+    return db_key;
+}
+
+
 namespace detail {
 
 void InitialiseDirectory(const boost::filesystem::path& directory) {
@@ -99,10 +120,18 @@ bool ShouldRetry(routing::Routing& routing, const nfs::Message& message) {
 void SendReply(const nfs::Message& original_message,
                const maidsafe_error& return_code,
                const routing::ReplyFunctor& reply_functor) {
+  if (!reply_functor)
+    return;
   nfs::Reply reply(CommonErrors::success);
   if (return_code.code() != CommonErrors::success)
     reply = nfs::Reply(return_code, original_message.Serialise().data);
   reply_functor(reply.Serialise()->string());
+}
+
+template<>
+std::string Pad<1>(uint32_t number) {
+  assert(number < 256);
+  return std::string(1, static_cast<char>(number));
 }
 
 }  // namespace detail

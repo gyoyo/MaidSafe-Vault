@@ -38,6 +38,7 @@ class MaidAccountMergePolicy {
  public:
   typedef MaidAccountUnresolvedEntry UnresolvedEntry;
   typedef MaidAccountResolvedEntry ResolvedEntry;
+  typedef MaidAccountHolder::DbKey DbKey;
   typedef AccountDb Database;
   explicit MaidAccountMergePolicy(AccountDb* account_db);
   MaidAccountMergePolicy(MaidAccountMergePolicy&& other);
@@ -47,9 +48,12 @@ class MaidAccountMergePolicy {
   int32_t AllowDelete(const typename Data::name_type& name);
 
  protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   AccountDb* account_db_;
 
  private:

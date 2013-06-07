@@ -35,6 +35,7 @@ class PmidAccountMergePolicy {
  public:
   typedef PmidAccountUnresolvedEntry UnresolvedEntry;
   typedef PmidAccountResolvedEntry ResolvedEntry;
+  typedef PmidAccountHolder::DbKey DbKey;
   typedef AccountDb Database;
   explicit PmidAccountMergePolicy(AccountDb* account_db);
   PmidAccountMergePolicy(PmidAccountMergePolicy&& other);
@@ -44,9 +45,12 @@ class PmidAccountMergePolicy {
   int32_t AllowDelete(const typename Data::name_type& name);
 
  protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   AccountDb* account_db_;
 
  private:

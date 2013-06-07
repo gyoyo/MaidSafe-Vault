@@ -92,9 +92,9 @@ void MetadataMergePolicy::MergeDelete(const DataNameVariant& /*data_name*/,
                                       const NonEmptyString& /*serialised_db_value*/) {
 }
 
-std::vector<MetadataMergePolicy::UnresolvedEntry> MetadataMergePolicy::MergeRecordTransfer(
+MetadataMergePolicy::UnresolvedEntries MetadataMergePolicy::MergeRecordTransfer(
     const UnresolvedEntry& /*unresolved_entry*/) {
-  std::vector<UnresolvedEntry> extra_unresolved_data;
+  UnresolvedEntries extra_unresolved_data;
   // merge size
   // merge subscribers
   // merge online_pmid_name

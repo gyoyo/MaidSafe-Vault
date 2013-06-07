@@ -48,24 +48,27 @@ class StructuredDataMergePolicy {
   StructuredDataMergePolicy& operator=(StructuredDataMergePolicy&& other);
 
  protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   ManagerDb<StructuredDataManager>* db_;
 
  private:
   StructuredDataMergePolicy(const StructuredDataMergePolicy&);
   StructuredDataMergePolicy& operator=(const StructuredDataMergePolicy&);
 
-  void MergePut(const DbKey& key,
+  void MergePut(const DbKey& db_key,
                 const StructuredDataVersions::VersionName& new_value,
                 const StructuredDataVersions::VersionName& old_value);
 
-  void MergeDeleteBranchUntilFork(const DbKey& key,
-                                  const StructuredDataVersions::VersionName& tot);
-  void MergeDelete(const DbKey& key);
+  void MergeDeleteBranchUntilFork(const DbKey& db_key,
+                                  const StructuredDataVersions::VersionName& tip_of_tree);
+  void MergeDelete(const DbKey& db_key);
 
-  void MergeAccountTransfer(const DbKey& key, const StructuredDataVersions& data_version);
+  void MergeAccountTransfer(const DbKey& db_key, const StructuredDataVersions& data_version);
 };
 
 

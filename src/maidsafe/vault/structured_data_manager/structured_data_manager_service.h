@@ -65,7 +65,8 @@ class StructuredDataManagerService {
 
   //// =============== Sync ========================================================================
   template<typename Data>
-  void Synchronise(const nfs::Message& message);
+  void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
+  void Sync();
   void HandleSynchronise(const nfs::Message& message);
 
   //// =============== Churn ============================================================

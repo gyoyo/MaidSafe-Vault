@@ -97,7 +97,7 @@ class MetadataHandler {
   template <typename Data>
   NonEmptyString GetSyncData(const typename Data::name_type& data_name);
   void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
-  void ReplaceNodeInSyncList(const DataNameVariant& record_name,
+  void ReplaceNodeInSyncList(const MetadataManager::RecordName& record_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
   template<typename Data>

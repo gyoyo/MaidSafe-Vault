@@ -167,8 +167,6 @@ void PmidAccountHolderService::Sync(const PmidName& account_name) {
   proto_sync.set_serialised_unresolved_entries(serialised_sync_data.string());
 
   nfs_.Sync(account_name, NonEmptyString(proto_sync.SerializeAsString()));
-  // TODO(Team): 2013-05-07 - Check this is correct place to increment sync attempt counter.
-  pmid_account_handler_.IncrementSyncAttempts(account_name);
 }
 
 void PmidAccountHolderService::HandleSync(const nfs::Message& message) {
@@ -179,7 +177,7 @@ void PmidAccountHolderService::HandleSync(const nfs::Message& message) {
     return;
   }
 
-  resolved_entries = pmid_account_handler_.ApplySyncData(PmidName(Identity(proto_sync.account_name())),
+  pmid_account_handler_.ApplySyncData(PmidName(Identity(proto_sync.account_name())),
                                       NonEmptyString(proto_sync.serialised_unresolved_entries()));
   //ReplyToMetadataManagers(resolved_entries);
 }
@@ -212,60 +210,6 @@ void PmidAccountHolderService::HandleAccountTransfer(const nfs::Message& message
 
 // =============== DataHolder =====================================================================
 
-void PmidAccountHolderService::InformOfDataHolderDown(const PmidName& pmid_name) {
-  pmid_account_handler_.SetDataHolderGoingDown(pmid_name);
-  InformAboutDataHolder(pmid_name, false);
-  pmid_account_handler_.SetDataHolderDown(pmid_name);
-}
-
-void PmidAccountHolderService::InformOfDataHolderUp(const PmidName& pmid_name) {
-  pmid_account_handler_.SetDataHolderGoingUp(pmid_name);
-  InformAboutDataHolder(pmid_name, true);
-  pmid_account_handler_.SetDataHolderUp(pmid_name);
-}
-
-void PmidAccountHolderService::InformAboutDataHolder(const PmidName& /*pmid_name*/, bool /*node_up*/) {
-  // TODO(Team): Decide on a better strategy instead of sleep
-//  Sleep(boost::posix_time::minutes(3));
-//  auto names(pmid_account_handler_.GetArchiveFileNames(pmid_name));
-//  for (auto ritr(names.rbegin()); ritr != names.rend(); ++ritr) {
-//    if (StatusHasReverted(pmid_name, node_up)) {
-//      RevertMessages(pmid_name, names.rbegin(), ritr, !node_up);
-//      return;
-//    }
-
-//    std::set<PmidName> metadata_manager_ids(GetDataNamesInFile(pmid_name, *ritr));
-//    SendMessages(pmid_name, metadata_manager_ids, node_up);
-//  }
-}
-
-void PmidAccountHolderService::RevertMessages(const PmidName& pmid_name,
-                                              const std::vector<fs::path>::reverse_iterator& begin,
-                                              std::vector<fs::path>::reverse_iterator& current,
-                                              bool node_up) {
-  while (current != begin) {
-    std::set<PmidName> metadata_manager_ids(GetDataNamesInFile(pmid_name, *current));
-    SendMessages(pmid_name, metadata_manager_ids, node_up);
-    --current;
-  }
-
-  node_up ?  pmid_account_handler_.SetDataHolderUp(pmid_name) :
-             pmid_account_handler_.SetDataHolderDown(pmid_name);
-}
-
-std::set<PmidName> PmidAccountHolderService::GetDataNamesInFile(
-    const PmidName& /*pmid_name*/, const boost::filesystem::path& /*path*/) const {
-  return std::set<PmidName>();
-}
-
-void PmidAccountHolderService::SendMessages(const PmidName& /*pmid_name*/,
-                                            const std::set<PmidName>& /*metadata_manager_ids*/,
-                                            bool /*node_up*/) {
-//  for (const PmidName& metadata_manager_id : metadata_manager_ids) {
-    //  TODO(dirvine) implement
-        //    nfs_.DataHolderStatusChanged(NodeId(metadata_manager_id), NodeId(pmid_name), node_up);
-//  }
-}
 
 }  // namespace vault
 }  // namespace maidsafe

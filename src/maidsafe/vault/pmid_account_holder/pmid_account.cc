@@ -141,7 +141,7 @@ bool PmidAccount::ApplyAccountTransfer(const NodeId& source_id,
         Identity(proto_pmid_account_details.db_entry(i).name())));
     int32_t size(proto_pmid_account_details.db_entry(i).value().size());
     PmidAccountUnresolvedEntry entry(
-        std::make_pair(data_name, nfs::MessageAction::kPut), size, source_id);
+        std::make_pair(DbKey(data_name), nfs::MessageAction::kPut), size, source_id);
     if (sync_.AddUnresolvedEntry(entry)) {
       pmid_record_.stored_total_size += size;
     }
@@ -177,7 +177,7 @@ NonEmptyString PmidAccount::GetSyncData() {
   return NonEmptyString(proto_unresolved_entries.SerializeAsString());
 }
 
-std::vector<PmidAccountResolvedEntry> PmidAccount::ApplySyncData(const NonEmptyString& serialised_unresolved_entries) {
+void PmidAccount::ApplySyncData(const NonEmptyString& serialised_unresolved_entries) {
   protobuf::UnresolvedEntries proto_unresolved_entries;
   if (!proto_unresolved_entries.ParseFromString(serialised_unresolved_entries.string()))
     ThrowError(CommonErrors::parsing_error);

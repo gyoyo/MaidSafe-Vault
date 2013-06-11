@@ -148,10 +148,10 @@ template <typename Data>
 NonEmptyString MetadataHandler::GetSyncData(const typename Data::name_type& data_name) {
   DataNameVariant data_name_variant(GetDataNameVariant(Data::name_type::tag_type::kEnumValue,
                                                        data_name));
-  if (sync_.GetUnresolvedCount(data_name_variant) < kSyncTriggerCount_)
+  if (sync_.GetUnresolvedCount(DbKey(data_name_variant)) < kSyncTriggerCount_)
     return NonEmptyString();
 
-  auto unresolved_entries(sync_.GetUnresolvedData(data_name_variant));
+  auto unresolved_entries(sync_.GetUnresolvedData());
   if (unresolved_entries.empty())
     return NonEmptyString();
 
@@ -161,13 +161,6 @@ NonEmptyString MetadataHandler::GetSyncData(const typename Data::name_type& data
         unresolved_entry.Serialise()->string());
   }
   return NonEmptyString(proto_unresolved_entries.SerializeAsString());
-}
-
-template<typename Data>
-void MetadataHandler::IncrementSyncAttempts(const typename Data::name_type& data_name) {
-  DataNameVariant data_name_variant(GetDataNameVariant(Data::name_type::tag_type::kEnumValue,
-                                                       data_name));
-  sync_.IncrementSyncAttempts(data_name_variant);
 }
 
 }  // namespace vault

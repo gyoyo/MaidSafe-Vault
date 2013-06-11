@@ -37,6 +37,7 @@ class PmidAccountMergePolicy {
   typedef PmidAccountResolvedEntry ResolvedEntry;
   typedef PmidAccountHolder::DbKey DbKey;
   typedef AccountDb Database;
+
   explicit PmidAccountMergePolicy(AccountDb* account_db);
   PmidAccountMergePolicy(PmidAccountMergePolicy&& other);
   PmidAccountMergePolicy& operator=(PmidAccountMergePolicy&& other);
@@ -83,7 +84,7 @@ int32_t PmidAccountMergePolicy::AllowDelete(const typename Data::name_type& name
   int32_t pending_puts(0), pending_deletes(0);
 
   while (itr != std::end(unresolved_data_)) {
-    if ((*itr).key.first == name_as_variant) {
+    if ((*itr).key.first.name() == name_as_variant) {
       if ((*itr).key.second == nfs::MessageAction::kPut) {
         if ((*itr).dont_add_to_db) {
           // A delete request must have been applied for this to be true, but it will (correctly)

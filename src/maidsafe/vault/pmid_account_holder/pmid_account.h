@@ -68,7 +68,7 @@ class PmidAccount {
 
   void AddLocalUnresolvedEntry(const PmidAccountUnresolvedEntry& unresolved_entry);
   NonEmptyString GetSyncData();
-  std::vector<PmidAccountResolvedEntry> ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
+  void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
   void ReplaceNodeInSyncList(const NodeId& old_node, const NodeId& new_node);
   void IncrementSyncAttempts();
 

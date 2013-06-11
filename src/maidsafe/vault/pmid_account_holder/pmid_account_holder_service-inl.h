@@ -33,8 +33,8 @@ PmidAccountUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
   static_assert(Action == nfs::MessageAction::kPut || Action == nfs::MessageAction::kDelete,
                 "Action must be either kPut of kDelete.");
   return PmidAccountUnresolvedEntry(
-            std::make_pair(GetDataNameVariant(DataTagValue(message.data().type.get()),
-                                              Identity(message.data().name)),
+            std::make_pair(DbKey(GetDataNameVariant(DataTagValue(message.data().type.get()),
+                                                    Identity(message.data().name))),
                            Action),
             message.data().content.string().size(),
             this_id);

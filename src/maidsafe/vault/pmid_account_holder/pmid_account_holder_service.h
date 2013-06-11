@@ -58,12 +58,6 @@ class PmidAccountHolderService {
   void HandlePut(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
   void HandleDelete(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
-
-  template<typename Data>
-  void AdjustAccount(const nfs::Message& message);
-  template<typename Data>
-  void SendMessages(const nfs::Message& message);
-
   template<typename Data>
   void HandlePutResult(const nfs::Reply& overall_result,
                        const nfs::Message& message,
@@ -82,20 +76,6 @@ class PmidAccountHolderService {
   void HandleAccountTransfer(const nfs::Message& message);
 
   void ValidateMessage(const nfs::Message& message) const;
-  void InformOfDataHolderDown(const PmidName& pmid_name);
-  void InformOfDataHolderUp(const PmidName& pmid_name);
-  void InformAboutDataHolder(const PmidName& pmid_name, bool node_up);
-
-  bool StatusHasReverted(const PmidName& pmid_name, bool node_up) const;
-  void RevertMessages(const PmidName& pmid_name,
-                      const std::vector<boost::filesystem::path>::reverse_iterator& begin,
-                      std::vector<boost::filesystem::path>::reverse_iterator& current,
-                      bool node_up);
-  std::set<PmidName> GetDataNamesInFile(const PmidName& pmid_name,
-                                        const boost::filesystem::path& path) const;
-  void SendMessages(const PmidName& pmid_name,
-                    const std::set<PmidName>& metadata_manager_ids,
-                    bool node_up);
 
   template<typename Data, nfs::MessageAction action>
   void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);

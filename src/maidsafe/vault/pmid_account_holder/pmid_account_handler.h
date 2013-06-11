@@ -53,15 +53,13 @@ class PmidAccountHandler {
 
   // Sync operations
   std::vector<PmidName> GetAccountNames() const;
-  std::vector<PmidName> GetArchivedAccountNames() const;
   PmidAccount::serialised_type GetSerialisedAccount(const PmidName& account_name) const;
   NonEmptyString GetSyncData(const PmidName& account_name);
-  std::vector<PmidAccountResolvedEntry> ApplySyncData(const PmidName& account_name,
+  void ApplySyncData(const PmidName& account_name,
                      const NonEmptyString& serialised_unresolved_entries);
   void ReplaceNodeInSyncList(const PmidName& account_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
-  void IncrementSyncAttempts(const PmidName& account_name);
 
   // Data operations
   template<typename Data>

@@ -377,8 +377,6 @@ void MetadataManagerService::Sync(const typename Data::name_type& data_name) {
     return;
 
   nfs_.Sync<Data>(data_name, serialised_sync_data);
-  // TODO(Fraser#5#): 2013-05-03 - Check this is correct place to increment sync attempt counter.
-  metadata_handler_.IncrementSyncAttempts<Data>(data_name);
 }
 
 }  // namespace vault

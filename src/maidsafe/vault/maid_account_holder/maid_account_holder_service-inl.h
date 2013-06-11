@@ -75,7 +75,7 @@ MaidAccountUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
   static_assert(action == nfs::MessageAction::kPut || action == nfs::MessageAction::kDelete,
                 "Action must be either kPut of kDelete.");
   return MaidAccountUnresolvedEntry(
-      std::make_pair(DataNameVariant(GetDataName<Data>(message)), action), cost, this_id);
+      std::make_pair(DbKey(DataNameVariant(GetDataName<Data>(message))), action), cost, this_id);
 }
 
 }  // namespace detail

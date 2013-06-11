@@ -37,9 +37,9 @@ MaidAccountUnresolvedEntry::UnresolvedElement(const serialised_type& serialised_
   if (!proto_copy.ParseFromString(serialised_copy->string()))
     ThrowError(CommonErrors::parsing_error);
 
-  key = DbKey(std::make_pair(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
-                                          Identity(proto_copy.key().name())),
-                             static_cast<nfs::MessageAction>(proto_copy.key().action())));
+  key = Key(std::make_pair(DbKey(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
+                                          Identity(proto_copy.key().name()))),
+                           static_cast<nfs::MessageAction>(proto_copy.key().action())));
   if (!(key.second == nfs::MessageAction::kPut || key.second == nfs::MessageAction::kDelete))
     ThrowError(CommonErrors::parsing_error);
 
@@ -65,7 +65,9 @@ MaidAccountUnresolvedEntry::UnresolvedElement(const serialised_type& serialised_
 template<>
 MaidAccountUnresolvedEntry::serialised_type MaidAccountUnresolvedEntry::Serialise() const {
   protobuf::MaidAndPmidUnresolvedEntry proto_copy;
-  auto tag_value_and_id(boost::apply_visitor(GetTagValueAndIdentityVisitor(), key.first));
+  GetTagValueAndIdentityVisitor tag_value_and_id_visitor;
+  const auto key_name(key.first.name());
+  auto tag_value_and_id(boost::apply_visitor(tag_value_and_id_visitor, key_name));
 
   auto proto_key(proto_copy.mutable_key());
   proto_key->set_type(static_cast<uint32_t>(tag_value_and_id.first));
@@ -96,9 +98,9 @@ PmidAccountUnresolvedEntry::UnresolvedElement(const serialised_type& serialised_
   if (!proto_copy.ParseFromString(serialised_copy->string()))
     ThrowError(CommonErrors::parsing_error);
 
-  key = std::make_pair(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
-                                          Identity(proto_copy.key().name())),
-                       static_cast<nfs::MessageAction>(proto_copy.key().action()));
+  key = Key(std::make_pair(DbKey(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
+                                          Identity(proto_copy.key().name()))),
+                       static_cast<nfs::MessageAction>(proto_copy.key().action())));
   if (!(key.second == nfs::MessageAction::kPut || key.second == nfs::MessageAction::kDelete))
     ThrowError(CommonErrors::parsing_error);
 

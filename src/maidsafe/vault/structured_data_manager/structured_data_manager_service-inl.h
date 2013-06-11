@@ -91,8 +91,8 @@ void StructuredDataManagerService::Sync() {
     unresolved_entries = sync_.GetUnresolvedData();
   }
 
-  for (const auto& unresolved_entry : unresolved_entries) {
-  }
+  /*for (const auto& unresolved_entry : unresolved_entries) {
+  }*/
 
 
   protobuf::UnresolvedEntries proto_unresolved_entries;
@@ -100,10 +100,10 @@ void StructuredDataManagerService::Sync() {
     proto_unresolved_entries.add_serialised_unresolved_entry(
         unresolved_entry.Serialise()->string());
   }
-  return NonEmptyString(proto_unresolved_entries.SerializeAsString());
+  //return NonEmptyString(proto_unresolved_entries.SerializeAsString());
 
 
-  nfs_.Sync<Data>(DataNameVariant(Data::name_type(message.data().name)), entry.Serialise().data);  // does not include
+  //nfs_.Sync<Data>(DataNameVariant(Data::name_type(message.data().name)), entry.Serialise().data);  // does not include
                                                                             // original_message_id
 }
 

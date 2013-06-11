@@ -78,7 +78,7 @@ class StructuredDataManagerService {
   Accumulator<StructuredDataAccountName> accumulator_;
   ManagerDb<StructuredDataManager> structured_data_db_;
   const NodeId kThisNodeId_;
-  Sync<StructuredDataMergePolicy> sync_;
+  vault::Sync<StructuredDataMergePolicy> sync_;
   StructuredDataManagerNfs nfs_;
 };
 

@@ -37,9 +37,9 @@ MaidAccountUnresolvedEntry::UnresolvedElement(const serialised_type& serialised_
   if (!proto_copy.ParseFromString(serialised_copy->string()))
     ThrowError(CommonErrors::parsing_error);
 
-  key = std::make_pair(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
+  key = DbKey(std::make_pair(GetDataNameVariant(static_cast<DataTagValue>(proto_copy.key().type()),
                                           Identity(proto_copy.key().name())),
-                       static_cast<nfs::MessageAction>(proto_copy.key().action()));
+                             static_cast<nfs::MessageAction>(proto_copy.key().action())));
   if (!(key.second == nfs::MessageAction::kPut || key.second == nfs::MessageAction::kDelete))
     ThrowError(CommonErrors::parsing_error);
 

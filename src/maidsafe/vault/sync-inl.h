@@ -203,7 +203,7 @@ typename MergePolicy::UnresolvedEntriesItr Sync<MergePolicy>::ReplaceNodeAndIncr
 
 template<typename MergePolicy>
 std::vector<typename MergePolicy::UnresolvedEntry> Sync<MergePolicy>::GetUnresolvedData(
-    bool increment_sync_attempts) {
+    bool /*increment_sync_attempts*/) {
   std::vector<typename MergePolicy::UnresolvedEntry> result;
   auto itr = std::begin(MergePolicy::unresolved_data_);
   while (itr != std::end(MergePolicy::unresolved_data_)) {
@@ -221,7 +221,7 @@ std::vector<typename MergePolicy::UnresolvedEntry> Sync<MergePolicy>::GetUnresol
       result.push_back(*itr);
       result.back().messages_contents.assign(1, *found);
       std::iter_swap(found, std::begin(itr->messages_contents));
-      assert(itr->key.action != a/c transfer);
+      //assert(itr->key.action != a/c transfer);
     }
     ++itr;
   }

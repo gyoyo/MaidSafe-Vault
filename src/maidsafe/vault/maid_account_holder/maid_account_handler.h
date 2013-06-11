@@ -64,7 +64,6 @@ class MaidAccountHandler {
   void ReplaceNodeInSyncList(const MaidName& account_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
-  void IncrementSyncAttempts(const MaidName& account_name);
 
   // Data operations
   MaidAccount::Status AllowPut(const MaidName& account_name, int32_t cost) const;

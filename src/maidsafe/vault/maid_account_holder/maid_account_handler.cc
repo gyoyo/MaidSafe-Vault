@@ -107,11 +107,6 @@ void MaidAccountHandler::ReplaceNodeInSyncList(const MaidName& account_name,
   maid_accounts_.at(account_name)->ReplaceNodeInSyncList(old_node, new_node);
 }
 
-void MaidAccountHandler::IncrementSyncAttempts(const MaidName& account_name) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  maid_accounts_.at(account_name)->IncrementSyncAttempts();
-}
-
 MaidAccount::Status MaidAccountHandler::AllowPut(const MaidName& account_name, int32_t cost) const {
   if (cost > 0) {
     std::lock_guard<std::mutex> lock(mutex_);

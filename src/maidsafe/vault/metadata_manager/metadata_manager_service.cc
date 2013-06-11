@@ -174,11 +174,11 @@ void MetadataManagerService::HandleChurnEvent(routing::MatrixChange matrix_chang
 
     // Replace old_node(s) in sync object and send TransferRecord to new node(s).
     assert(check_holders_result.old_holders.size() == check_holders_result.new_holders.size());
-    for (auto i(0U); i != check_holders_result.old_holders.size(); ++i) {
+    /*for (auto i(0U); i != check_holders_result.old_holders.size(); ++i) {
       metadata_handler_.ReplaceNodeInSyncList(itr->name(), check_holders_result.old_holders[i],
                                               check_holders_result.new_holders[i]);
       TransferRecord(itr->name(), check_holders_result.new_holders[i]);
-    }
+    }*/
     ++itr;
   }
   // TODO(Prakash):  modify ReplaceNodeInSyncList to be called once with vector of tuple/struct

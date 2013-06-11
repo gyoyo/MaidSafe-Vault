@@ -85,7 +85,7 @@ MetadataHandler::serialised_record_type MetadataHandler::GetSerialisedRecord(
   MetadataUnresolvedEntry unresolved_entry_db_value(
       std::make_pair(DbKey(data_name), nfs::MessageAction::kAccountTransfer), metadata_value,
         kThisNodeId_);
-  auto unresolved_data(sync_.GetUnresolvedData(data_name));
+  auto unresolved_data(sync_.GetUnresolvedData());
   unresolved_data.push_back(unresolved_entry_db_value);
   for (const auto& unresolved_entry : unresolved_data) {
     proto_unresolved_entries.add_serialised_unresolved_entry(

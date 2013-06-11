@@ -28,6 +28,7 @@
 
 #include "maidsafe/vault/db.h"
 #include "maidsafe/vault/account_db.h"
+#include "maidsafe/vault/manager_db.h"
 
 namespace maidsafe {
 namespace vault {
@@ -87,9 +88,10 @@ class DbTest : public testing::Test {
     uint32_t size_;
   };
 
-  NonEmptyString GenerateKeyValueData(DataNameVariant& key, uint32_t size) {
+  NonEmptyString GenerateKeyValueData(DbKey& key, uint32_t size) {
     GenerateKeyValuePair generate_key_value_pair_(size);
-    return boost::apply_visitor(generate_key_value_pair_, key);
+    DataNameVariant data_name_variant(key.name());
+    return boost::apply_visitor(generate_key_value_pair_, data_name_variant);
   }
 
   NonEmptyString GenerateValue(uint32_t size = kValueSize) {
@@ -176,14 +178,17 @@ TEST_F(DbTest, BEH_GetSingleAccount) {
   AccountDb account_db(db);
   std::vector<Db::KvPair> nodes;
   for (uint32_t i = 0; i != 10000; ++i) {
-    DataNameVariant key(GetRandomKey());
+    DbKey key(GetRandomKey());
     NonEmptyString value(GenerateKeyValueData(key, kValueSize));
     nodes.push_back(std::make_pair(key, value));
   }
   for (uint32_t i = 0; i != 10000; ++i)
     EXPECT_NO_THROW(account_db.Put(std::make_pair(nodes[i].first, nodes[i].second)));
-  for (uint32_t i = 0; i != 10000; ++i)
-    EXPECT_EQ(nodes[i].second, account_db.Get(nodes[i].first));
+  for (uint32_t i = 0; i != 10000; ++i) {
+    NonEmptyString value;
+    EXPECT_NO_THROW(value = account_db.Get(nodes[i].first));
+    EXPECT_EQ(nodes[i].second, value);
+  }
 }
 
 TEST_F(DbTest, BEH_DeleteSingleAccount) {
@@ -191,7 +196,7 @@ TEST_F(DbTest, BEH_DeleteSingleAccount) {
   AccountDb account_db(db);
   std::vector<Db::KvPair> nodes;
   for (uint32_t i = 0; i != 10000; ++i) {
-    DataNameVariant key(GetRandomKey());
+    DbKey key(GetRandomKey());
     NonEmptyString value(GenerateKeyValueData(key, kValueSize));
     nodes.push_back(std::make_pair(key, value));
   }
@@ -216,7 +221,7 @@ TEST_F(DbTest, BEH_GetMultipleAccounts) {
   for (uint32_t i = 0; i != accounts; ++i) {
     uint32_t entries(RandomUint32() % 10000);
     for (uint32_t j = 0; j != entries; ++j) {
-      DataNameVariant key(GetRandomKey());
+      DbKey key(GetRandomKey());
       NonEmptyString value(GenerateKeyValueData(key, kValueSize));
       account_vector[i].push_back(std::make_pair(key, value));
     }
@@ -241,7 +246,7 @@ TEST_F(DbTest, BEH_DeleteMultipleAccounts) {
   for (uint32_t i = 0; i != accounts; ++i) {
     uint32_t entries(RandomUint32() % 10000);
     for (uint32_t j = 0; j != entries; ++j) {
-      DataNameVariant key(GetRandomKey());
+      DbKey key(GetRandomKey());
       NonEmptyString value(GenerateKeyValueData(key, kValueSize));
       account_vector[i].push_back(std::make_pair(key, value));
     }
@@ -276,7 +281,7 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
     uint32_t entries(RandomUint32() % 1000);
     expected_count += entries;
     for (uint32_t j = 0; j != entries; ++j) {
-      DataNameVariant key(GetRandomKey());
+      DbKey key(GetRandomKey());
       NonEmptyString value(GenerateKeyValueData(key, kValueSize));
       account_vector[i].push_back(std::make_pair(key, value));
       //async_ops.push_back(std::async(
@@ -342,7 +347,7 @@ TEST_F(DbTest, BEH_ParallelAccountCreation) {
         AccountDb account_db(db);
         std::vector<Db::KvPair> nodes;
         for (uint32_t i = 0; i != 100; ++i) {
-          DataNameVariant key(GetRandomKey());
+          DbKey key(GetRandomKey());
           NonEmptyString value(GenerateKeyValueData(key, kValueSize));
           nodes.push_back(std::make_pair(key, value));
         }
@@ -357,7 +362,7 @@ TEST_F(DbTest, BEH_ParallelAccountCreation) {
 TEST_F(DbTest, BEH_PutSameKeyDifferentValue) {
   Db db(vault_root_directory_);
   AccountDb account_db(db);
-  DataNameVariant key(GetRandomKey());
+  DbKey key(GetRandomKey());
   NonEmptyString value(GenerateKeyValueData(key, kValueSize)), last_value;
   const uint32_t entries(100);
   for (uint32_t i = 0; i != entries; ++i) {

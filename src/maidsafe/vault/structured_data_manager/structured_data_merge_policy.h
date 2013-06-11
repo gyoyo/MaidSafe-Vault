@@ -9,8 +9,8 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MANAGER_MERGE_POLICY_H_
-#define MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MANAGER_MERGE_POLICY_H_
+#ifndef MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MERGE_POLICY_H_
+#define MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MERGE_POLICY_H_
 
 #include <map>
 #include <set>
@@ -22,49 +22,53 @@
 #include "maidsafe/nfs/types.h"
 #include "maidsafe/data_types/structured_data_versions.h"
 #include "maidsafe/data_types/data_name_variant.h"
-#include "maidsafe/vault/structured_data_manager/structured_data_key.h"
-#include "maidsafe/vault/structured_data_manager/structured_data_value.h"
 #include "maidsafe/vault/manager_db.h"
 #include "maidsafe/vault/unresolved_element.h"
+#include "maidsafe/vault/structured_data_manager/structured_data_manager.h"
+#include "maidsafe/vault/structured_data_manager/structured_data_key.h"
+#include "maidsafe/vault/structured_data_manager/structured_data_unresolved_entry_value.h"
 
 
 namespace maidsafe {
 
 namespace vault {
 
+typedef UnresolvedElement<StructuredDataManager> StructuredDataUnresolvedEntry;
+typedef StructuredDataUnresolvedEntry StructuredDataResolvedEntry;
+
 class StructuredDataMergePolicy {
  public:
-  typedef UnresolvedElement<StructuredDataKey, StructuredDataValue> UnresolvedEntry;
-  typedef UnresolvedElement<StructuredDataKey, StructuredDataValue> ResolvedEntry;
-  typedef std::pair<DataNameVariant, Identity> DbKey;
+  typedef StructuredDataUnresolvedEntry UnresolvedEntry;
+  typedef StructuredDataResolvedEntry ResolvedEntry;
+  typedef StructuredDataManager::DbKey DbKey;
   typedef ManagerDb<StructuredDataManager> Database;
 
   explicit StructuredDataMergePolicy(ManagerDb<StructuredDataManager>* db);
   StructuredDataMergePolicy(StructuredDataMergePolicy&& other);
   StructuredDataMergePolicy& operator=(StructuredDataMergePolicy&& other);
 
-protected:
+ protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   ManagerDb<StructuredDataManager>* db_;
 
  private:
   StructuredDataMergePolicy(const StructuredDataMergePolicy&);
   StructuredDataMergePolicy& operator=(const StructuredDataMergePolicy&);
 
-  void MergePut(const DbKey& key,
+  void MergePut(const DbKey& db_key,
                 const StructuredDataVersions::VersionName& new_value,
                 const StructuredDataVersions::VersionName& old_value);
 
-  void MergeDeleteBranchUntilFork(const DbKey& key,
-                                  const StructuredDataVersions::VersionName& tot);
-  void MergeDelete(const DbKey& key);
+  void MergeDeleteBranchUntilFork(const DbKey& db_key,
+                                  const StructuredDataVersions::VersionName& tip_of_tree);
+  void MergeDelete(const DbKey& db_key);
 
-  std::vector<Identity> MergeGet(const DbKey& key);
-  void MergeGetBranch(const DbKey& key, const StructuredDataVersions::VersionName& tot);
-
-  void MergeAccountTransfer(const DbKey& key, const StructuredDataVersions& data_version);
+  void MergeAccountTransfer(const DbKey& db_key, const StructuredDataVersions& data_version);
 };
 
 
@@ -72,4 +76,4 @@ protected:
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MANAGER_MERGE_POLICY_H_
+#endif  // MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MERGE_POLICY_H_

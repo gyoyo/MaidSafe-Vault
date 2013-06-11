@@ -20,7 +20,8 @@
 #include "maidsafe/common/on_scope_exit.h"
 #include "maidsafe/common/types.h"
 
-#include "maidsafe/vault/metadata_manager/metadata.h"
+#include "maidsafe/vault/metadata_manager/metadata_value.h"
+#include "maidsafe/vault/metadata_manager/metadata_manager.h"
 #include "maidsafe/vault/metadata_manager/metadata_helpers.h"
 #include "maidsafe/vault/manager_db.h"
 #include "maidsafe/vault/metadata_manager/metadata.pb.h"
@@ -91,12 +92,12 @@ class MetadataHandler {
   void AddLocalUnresolvedEntry(const MetadataUnresolvedEntry& unresolved_entry);
 
   // Sync operations
-  std::vector<DataNameVariant> GetRecordNames() const;
+  std::vector<MetadataManager::RecordName> GetRecordNames() const;
   serialised_record_type GetSerialisedRecord(const DataNameVariant& data_name);
   template <typename Data>
   NonEmptyString GetSyncData(const typename Data::name_type& data_name);
   void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
-  void ReplaceNodeInSyncList(const DataNameVariant& record_name,
+  void ReplaceNodeInSyncList(const MetadataManager::RecordName& record_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
   template<typename Data>

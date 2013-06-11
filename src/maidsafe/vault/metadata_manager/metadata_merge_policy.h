@@ -23,16 +23,21 @@
 
 #include "maidsafe/vault/unresolved_element.h"
 #include "maidsafe/vault/manager_db.h"
+#include "maidsafe/vault/metadata_manager/metadata_manager.h"
 
 
 namespace maidsafe {
 
 namespace vault {
 
+typedef UnresolvedElement<MetadataManager> MetadataUnresolvedEntry;
+typedef MetadataUnresolvedEntry MetadataResolvedEntry;
+
 class MetadataMergePolicy {
  public:
   typedef MetadataUnresolvedEntry UnresolvedEntry;
   typedef MetadataResolvedEntry ResolvedEntry;
+  typedef MetadataManager::DbKey DbKey;
   typedef ManagerDb<MetadataManager> Database;
 
   explicit MetadataMergePolicy(ManagerDb<MetadataManager>* metadata_db);
@@ -40,9 +45,12 @@ class MetadataMergePolicy {
   MetadataMergePolicy& operator=(MetadataMergePolicy&& other);
 
  protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   ManagerDb<MetadataManager>* metadata_db_;
 
  private:
@@ -52,7 +60,7 @@ class MetadataMergePolicy {
   void MergePut(const DataNameVariant& data_name, int data_size);
   void MergeDelete(const DataNameVariant& data_name, const NonEmptyString& serialised_db_value);
   int GetDataSize(const UnresolvedEntry& unresolved_entry) const;
-  std::vector<UnresolvedEntry> MergeRecordTransfer(const UnresolvedEntry& unresolved_entry);
+  UnresolvedEntries MergeRecordTransfer(const UnresolvedEntry& unresolved_entry);
 };
 
 }  // namespace vault

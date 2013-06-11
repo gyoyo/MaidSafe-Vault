@@ -22,11 +22,15 @@
 #include "maidsafe/nfs/types.h"
 
 #include "maidsafe/vault/unresolved_element.h"
+#include "maidsafe/vault/maid_account_holder/maid_account_holder.h"
 
 
 namespace maidsafe {
 
 namespace vault {
+
+typedef UnresolvedElement<MaidAccountHolder> MaidAccountUnresolvedEntry;
+typedef MaidAccountUnresolvedEntry MaidAccountResolvedEntry;
 
 class AccountDb;
 
@@ -34,6 +38,7 @@ class MaidAccountMergePolicy {
  public:
   typedef MaidAccountUnresolvedEntry UnresolvedEntry;
   typedef MaidAccountResolvedEntry ResolvedEntry;
+  typedef MaidAccountHolder::DbKey DbKey;
   typedef AccountDb Database;
   explicit MaidAccountMergePolicy(AccountDb* account_db);
   MaidAccountMergePolicy(MaidAccountMergePolicy&& other);
@@ -43,9 +48,12 @@ class MaidAccountMergePolicy {
   int32_t AllowDelete(const typename Data::name_type& name);
 
  protected:
+  typedef std::vector<UnresolvedEntry> UnresolvedEntries;
+  typedef std::vector<UnresolvedEntry>::iterator UnresolvedEntriesItr;
+
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-  std::vector<UnresolvedEntry> unresolved_data_;
+  UnresolvedEntries unresolved_data_;
   AccountDb* account_db_;
 
  private:

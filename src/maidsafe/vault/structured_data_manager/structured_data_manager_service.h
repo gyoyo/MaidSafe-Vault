@@ -28,8 +28,7 @@
 #include "maidsafe/vault/sync.h"
 #include "maidsafe/vault/sync.pb.h"
 #include "maidsafe/vault/types.h"
-#include "maidsafe/vault/structured_data_manager/structured_data_key.h"
-#include "maidsafe/vault/structured_data_manager/structured_data_value.h"
+#include "maidsafe/vault/structured_data_manager/structured_data_manager.h"
 #include "maidsafe/vault/structured_data_manager/structured_data_merge_policy.h"
 #include "maidsafe/vault/manager_db.h"
 
@@ -47,7 +46,7 @@ class StructuredDataManagerService {
   template<typename Data>
   void HandleMessage(const nfs::Message& message,
                      const routing::ReplyFunctor& reply_functor);
-  void HandleChurnEvent(routing::MatrixChange /*matrix_change*/) {}
+  void HandleChurnEvent(routing::MatrixChange matrix_change);
 
  private:
   StructuredDataManagerService(const StructuredDataManagerService&);
@@ -59,18 +58,18 @@ class StructuredDataManagerService {
   void ValidateSyncSender(const nfs::Message& message) const;
   std::vector<StructuredDataVersions::VersionName>
                        GetVersionsFromMessage(const nfs::Message& msg) const;
+  NonEmptyString GetSerialisedRecord(const StructuredDataManager::DbKey& db_key);
   //// =============== Get data ====================================================================
-
   void HandleGet(const nfs::Message& message, routing::ReplyFunctor reply_functor);
   void HandleGetBranch(const nfs::Message& message, routing::ReplyFunctor reply_functor);
 
   //// =============== Sync ========================================================================
   template<typename Data>
-  void Synchronise(const nfs::Message& message);
+  void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
+  void Sync();
   void HandleSynchronise(const nfs::Message& message);
 
   //// =============== Churn ============================================================
-  void HandleChurnEvent(const NodeId& old_node, const NodeId& new_node);
   void HandleAccountTransfer(const nfs::Message& message);
 
   routing::Routing& routing_;

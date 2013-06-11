@@ -57,17 +57,13 @@ void MetadataHandler::AddLocalUnresolvedEntry(const MetadataUnresolvedEntry& unr
   sync_.AddLocalEntry(unresolved_entry);
 }
 
-std::vector<DataNameVariant> MetadataHandler::GetRecordNames() const {
+std::vector<MetadataManager::RecordName> MetadataHandler::GetRecordNames() const {
   return metadata_db_->GetKeys();
 }
 
-void MetadataHandler::ReplaceNodeInSyncList(const DataNameVariant& /*record_name*/,  //FIXME in Sync
+void MetadataHandler::ReplaceNodeInSyncList(const MetadataManager::RecordName& record_name,
                                             const NodeId& old_node, const NodeId& new_node) {
-  // FIXME(Prakash) Need to pass record_name to sync
-  // or have sync test whenther new node should be managing the 'account'
-    // we can use the routing IsResponsibleFor(account_name, node_name) test I think
-    // This is a bit of work but same test will be required for account transfer
-  sync_.ReplaceNode(old_node, new_node);
+  sync_.ReplaceNode(record_name, old_node, new_node);
 }
 
 void MetadataHandler::ApplySyncData(const NonEmptyString& serialised_unresolved_entries) {
@@ -85,9 +81,9 @@ void MetadataHandler::ApplySyncData(const NonEmptyString& serialised_unresolved_
 MetadataHandler::serialised_record_type MetadataHandler::GetSerialisedRecord(
     const DataNameVariant& data_name) {
   protobuf::UnresolvedEntries proto_unresolved_entries;
-  auto metadata_value(metadata_db_->Get(data_name));
+  auto metadata_value(metadata_db_->Get(DbKey(data_name)));
   MetadataUnresolvedEntry unresolved_entry_db_value(
-      std::make_pair(data_name, nfs::MessageAction::kAccountTransfer), metadata_value,
+      std::make_pair(DbKey(data_name), nfs::MessageAction::kAccountTransfer), metadata_value,
         kThisNodeId_);
   auto unresolved_data(sync_.GetUnresolvedData(data_name));
   unresolved_data.push_back(unresolved_entry_db_value);

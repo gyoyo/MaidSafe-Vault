@@ -49,15 +49,49 @@ MetadataUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
       metadata_value, this_id);
 }
 
+void SendMetadataCost(const nfs::Message& original_message,
+                      const routing::ReplyFunctor& reply_functor,
+                      nfs::Reply& reply);
+
 template<typename Accumulator>
-bool AddMetadataPutResult(const nfs::Message& /*message*/,  // FIXME rename
-                          const routing::ReplyFunctor& /*reply_functor*/,
-                          const nfs::Reply& /*reply*/,
-                          Accumulator& /*accumulator*/,
-                          std::mutex& /*accumulator_mutex*/,
-                          int /*requests_required*/) {
-  //FIXME(Prakash): Implement merge cost here
-  return false;
+bool AccumulateMetadataPut(const nfs::Message& message,
+                           const routing::ReplyFunctor& reply_functor,
+                           const maidsafe_error& return_code,
+                           const int32_t& cost,
+                           Accumulator& accumulator,
+                           std::mutex& accumulator_mutex,
+                           int requests_required) {
+  std::vector<typename Accumulator::PendingRequest> pending_requests;
+  nfs::Reply overall_reply(CommonErrors::pending_result);
+  {
+    std::lock_guard<std::mutex> lock(accumulator_mutex);
+    auto pending_results(accumulator.PushSingleResult(message, reply_functor,
+                                                      nfs::Reply(return_code)));
+    if (static_cast<int>(pending_results.size()) < requests_required)
+      return false;
+
+    auto result(nfs::GetSuccessOrMostFrequentReply(pending_results, requests_required));
+    if (!result.second && pending_results.size() < routing::Parameters::node_group_size)
+      return false;
+    maidsafe_error overall_return_code((*result.first).error());
+
+    if (overall_return_code.code() == CommonErrors::success) {
+      // Cost only at time of resolution is taken
+      protobuf::Cost proto_cost;
+      proto_cost.set_cost(cost);
+      assert(proto_cost.IsInitialized());
+      NonEmptyString serialised_cost;
+      overall_reply = nfs::Reply(CommonErrors::success, serialised_cost);
+    } else {
+      overall_reply = nfs::Reply(overall_return_code); // original message to be appended in reply
+    }
+    pending_requests = accumulator.SetHandled(message, nfs::Reply(overall_return_code));
+  }
+
+  for (auto& pending_request : pending_requests)
+    SendMetadataCost(pending_request.msg, pending_request.reply_functor, overall_reply);
+
+  return true;
 }
 
 }  // namespace detail
@@ -78,6 +112,7 @@ template<typename Data>
 void MetadataManagerService::HandleMessage(const nfs::Message& message,
                                            const routing::ReplyFunctor& reply_functor) {
   nfs::Reply reply(CommonErrors::success);
+  // FIXME Prakash validate sender
   {
     std::lock_guard<std::mutex> lock(accumulator_mutex_);
     if (accumulator_.CheckHandled(message, reply))
@@ -115,12 +150,9 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
     auto data_name(data.name());
     auto data_size(static_cast<int32_t>(message.data().content.string().size()));
     auto is_duplicate_and_cost(metadata_handler_.template CheckPut<Data>(data_name, data_size));
-    protobuf::Cost proto_cost;
-    proto_cost.set_cost(is_duplicate_and_cost.second);
-    assert(proto_cost.IsInitialized());
-    nfs::Reply reply(CommonErrors::success, NonEmptyString(proto_cost.SerializeAsString()));
-    if (detail::AddMetadataPutResult(message, reply_functor, reply, accumulator_,
-                                     accumulator_mutex_, kPutRequestsRequired_)) {
+    if (detail::AccumulateMetadataPut(message, reply_functor, MakeError(CommonErrors::success),
+                                      is_duplicate_and_cost.second, accumulator_,
+                                      accumulator_mutex_, kPutRequestsRequired_)) {
       if (is_duplicate_and_cost.first) {  // No need to store data on DH
         MetadataValue metadata_value(data_size);
         AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message, metadata_value);
@@ -129,24 +161,20 @@ void MetadataManagerService::HandlePut(const nfs::Message& message,
                                     message.data_holder() :
                                     Identity(routing_.RandomConnectedNode().string()));
         // Account will be created by PutResult message from PAH
-        Put(data, target_data_holder);
+        nfs_.Put(target_data_holder, data, nullptr);
       }
     }
   }
   catch(const maidsafe_error& error) {
-    detail::AddMetadataPutResult(message, reply_functor, nfs::Reply(error), accumulator_,
-                                 accumulator_mutex_, kPutRequestsRequired_);
+    detail::AccumulateMetadataPut(message, reply_functor, error, 0, accumulator_,
+                                  accumulator_mutex_, kPutRequestsRequired_);
   }
   catch(...) {
-    detail::AddMetadataPutResult(message, reply_functor, nfs::Reply(CommonErrors::unknown),
-                                 accumulator_, accumulator_mutex_, kPutRequestsRequired_);
+    detail::AccumulateMetadataPut(message, reply_functor, MakeError(CommonErrors::unknown), 0,
+                                  accumulator_, accumulator_mutex_, kPutRequestsRequired_);
   }
 }
 
-template<typename Data>
-void MetadataManagerService::Put(const Data& data, const PmidName& target_data_holder) {
-  nfs_.Put(target_data_holder, data, nullptr);
-}
 
 template<typename Data>
 void MetadataManagerService::HandlePutResult(const nfs::Message& message) {
@@ -169,7 +197,7 @@ void MetadataManagerService::HandlePutResult(const nfs::Message& message) {
                   typename Data::serialised_type(
                     NonEmptyString(proto_put_result.serialised_data())));
         PmidName target_data_holder(Identity(routing_.RandomConnectedNode().string()));
-        Put(data, target_data_holder);
+        nfs_.Put(target_data_holder, data, nullptr);
       }
     }
   }
@@ -290,26 +318,26 @@ void MetadataManagerService::HandleDelete(const nfs::Message& message,
 }
 
 //TODO(Prakash) Change this to service to handle data stored/ not stored message and then sync
-template<typename Data>
-void MetadataManagerService::HandlePutResult(const nfs::Reply& overall_result) {
-  if (overall_result.IsSuccess())
-    return;
+//template<typename Data>
+//void MetadataManagerService::HandlePutResult(const nfs::Reply& overall_result) {
+//  if (overall_result.IsSuccess())
+//    return;
 
-  try {
-    nfs::Message original_message(nfs::Message::serialised_type(overall_result.data()));
-    if (!ThisVaultInGroupForData(original_message)) {
-      LOG(kInfo) << "Stopping retries for Put, since no longer responsible for this data.";
-      return;
-    }
+//  try {
+//    nfs::Message original_message(nfs::Message::serialised_type(overall_result.data()));
+//    if (!ThisVaultInGroupForData(original_message)) {
+//      LOG(kInfo) << "Stopping retries for Put, since no longer responsible for this data.";
+//      return;
+//    }
 
-    Data data(typename Data::name_type(original_message.data().name),
-              typename Data::serialised_type(original_message.data().content));
-    Put(data, PmidName(Identity(routing_.RandomConnectedNode().string())));
-  }
-  catch(const std::exception& e) {
-    LOG(kError) << "Error retrying Put: " << e.what();
-  }
-}
+//    Data data(typename Data::name_type(original_message.data().name),
+//              typename Data::serialised_type(original_message.data().content));
+//    Put(data, PmidName(Identity(routing_.RandomConnectedNode().string())));
+//  }
+//  catch(const std::exception& e) {
+//    LOG(kError) << "Error retrying Put: " << e.what();
+//  }
+//}
 
 template<typename Data>
 void MetadataManagerService::HandleGetReply(std::string serialised_reply) {

@@ -52,56 +52,46 @@ void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
   {
     std::lock_guard<std::mutex> lock(accumulator_mutex_);
     if (accumulator_.CheckHandled(message, reply))
-      return reply_functor(reply.Serialise()->string());
+      return;
   }
 
   if (message.data().action == nfs::MessageAction::kPut) {
-    HandlePut<Data>(message, reply_functor);
+    HandlePut<Data>(message);
   } else if (message.data().action == nfs::MessageAction::kDelete) {
     HandleDelete<Data>(message, reply_functor);
   } else {
-    reply = nfs::Reply(VaultErrors::operation_not_supported, message.Serialise().data);
-    SendReplyAndAddToAccumulator(message, reply_functor, reply);
+    LOG(kError) << "Unsupported operation.";
   }
 }
 
 template<typename Data>
-void PmidAccountHolderService::HandlePut(const nfs::Message& message,
-                                         const routing::ReplyFunctor& reply_functor) {
-  maidsafe_error return_code(CommonErrors::success);
+void PmidAccountHolderService::HandlePut(const nfs::Message& message) {
   try {
     Data data(typename Data::name_type(message.data().name),
               typename Data::serialised_type(message.data().content));
-    
-    auto put_op(std::make_shared<nfs::OperationOp>(
-        kPutRepliesSuccessesRequired_,
-        [this, message, reply_functor](nfs::Reply overall_result) {
-            this->HandlePutResult<Data>(overall_result, message, reply_functor);
-        }));
 
     nfs_.Put(PmidName(detail::GetPmidAccountName(message)),
              data,
-             [put_op](std::string serialised_reply) {
-                 nfs::HandleOperationReply(put_op, serialised_reply);
+             [this, message](std::string reply) {
+                this->HandlePutCallback<Data>(reply, message);
              });
+    nfs::Reply reply(maidsafe::CommonErrors::success);
+    accumulator_.SetHandled(message, reply);
     return;
   }
   catch(const maidsafe_error& error) {
     LOG(kWarning) << error.what();
-    return_code = error;
   }
   catch(...) {
     LOG(kWarning) << "Unknown error.";
-    return_code = MakeError(CommonErrors::unknown);
   }
-  nfs::Reply reply(return_code, message.Serialise().data);
-  SendReplyAndAddToAccumulator(message, reply_functor, reply);
+  SendPutResult<Data>(message, false);
 }
 
 template<typename Data>
 void PmidAccountHolderService::HandleDelete(const nfs::Message& message,
-                                            const routing::ReplyFunctor& reply_functor) {
-  SendReplyAndAddToAccumulator(message, reply_functor, nfs::Reply(CommonErrors::success));
+                                            const routing::ReplyFunctor& /*reply_functor*/) {
+//  SendReplyAndAddToAccumulator(message, reply_functor, nfs::Reply(CommonErrors::success));
   try {
     auto account_name(detail::GetPmidAccountName(message));
     typename Data::name_type data_name(message.data().name);
@@ -118,16 +108,31 @@ void PmidAccountHolderService::HandleDelete(const nfs::Message& message,
 }
 
 template<typename Data>
-void PmidAccountHolderService::HandlePutResult(const nfs::Reply& overall_result,
-                                               const nfs::Message& message,
-                                               routing::ReplyFunctor reply_functor) {
-  if (overall_result.IsSuccess()) {
-    nfs::Reply reply(CommonErrors::success);
+void PmidAccountHolderService::HandlePutCallback(const std::string& serialised_reply,
+                                                 const nfs::Message& message) {
+  nfs::Reply reply((nfs::Reply::serialised_type(NonEmptyString(serialised_reply))));
+  if (reply.IsSuccess()) {
     AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message);
-    SendReplyAndAddToAccumulator(message, reply_functor, reply);
+    SendPutResult<Data>(message, true);
   } else {
-    SendReplyAndAddToAccumulator(message, reply_functor, overall_result);
+    SendPutResult<Data>(message, false);
   }
+}
+
+template<typename Data>
+void PmidAccountHolderService::SendPutResult(const nfs::Message& message, bool result) {
+  std::lock_guard<std::mutex> lock(accumulator_mutex_);
+  protobuf::PutResult proto_put_result;
+
+  proto_put_result.set_result(result);
+  proto_put_result.set_pmid_name(message.data_holder()->string());
+  if (result) {
+    proto_put_result.set_data_size(message.data().content.string().size());
+  } else {
+    proto_put_result.set_serialised_data(message.Serialise()->string());
+  }
+  nfs_.SendPutResult<Data>(Data::name_type(message.data().name),
+                           NonEmptyString(proto_put_result.SerializeAsString()));
 }
 
 template<typename Data, nfs::MessageAction Action>
@@ -136,16 +141,6 @@ void PmidAccountHolderService::AddLocalUnresolvedEntryThenSync(const nfs::Messag
   auto unresolved_entry(detail::CreateUnresolvedEntry<Data, Action>(message, routing_.kNodeId()));
   pmid_account_handler_.AddLocalUnresolvedEntry(account_name, unresolved_entry);
   Sync(account_name);
-}
-
-template<typename Data, nfs::MessageAction Action>
-void PmidAccountHolderService::ReplyToMetadataManagers(
-      const std::vector<PmidAccountResolvedEntry>& resolved_entries,
-      const PmidName& pmid_name) {
-  /*for (auto& resolved_entry : resolved_entries) {
-    
-    
-  }*/
 }
 
 }  // namespace vault

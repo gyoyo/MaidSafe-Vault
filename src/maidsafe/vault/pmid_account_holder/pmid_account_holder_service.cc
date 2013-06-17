@@ -47,7 +47,7 @@ PmidAccountHolderService::PmidAccountHolderService(const passport::Pmid& pmid,
       nfs_(routing, pmid) {}
 
 void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
-                                             const routing::ReplyFunctor& reply_functor) {
+                                             const routing::ReplyFunctor& /*reply_functor*/) {
   ValidateGenericSender(message);
   nfs::Reply reply(CommonErrors::success);
   nfs::MessageAction action(message.data().action);
@@ -60,16 +60,9 @@ void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
       return HandleSync(message);
     case nfs::MessageAction::kAccountTransfer:
       return HandleAccountTransfer(message);
-    case nfs::MessageAction::kNodeDown:
-      return;
-    case nfs::MessageAction::kNodeUp:
-      return;
     default:
       LOG(kError) << "Unhandled Post action type";
   }
-
-  reply = nfs::Reply(VaultErrors::operation_not_supported, message.Serialise().data);
-  reply_functor(reply.Serialise()->string());
 }
 
 void PmidAccountHolderService::CreatePmidAccount(const nfs::Message& message) {
@@ -142,18 +135,6 @@ void PmidAccountHolderService::ValidateGenericSender(const nfs::Message& message
   if (!FromMetadataManager(message) || !detail::ForThisPersona(message))
     ThrowError(CommonErrors::invalid_parameter);
 }
-
-// =============== Put/Delete data ================================================================
-
-void PmidAccountHolderService::SendReplyAndAddToAccumulator(
-    const nfs::Message& message,
-    const routing::ReplyFunctor& reply_functor,
-    const nfs::Reply& reply) {
-  reply_functor(reply.Serialise()->string());
-  std::lock_guard<std::mutex> lock(accumulator_mutex_);
-  accumulator_.SetHandled(message, reply);
-}
-
 
 // =============== Sync ===========================================================================
 

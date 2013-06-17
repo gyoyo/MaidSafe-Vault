@@ -55,17 +55,13 @@ class PmidAccountHolderService {
 
   // =============== Put/Delete data ================================================================
   template<typename Data>
-  void HandlePut(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
+  void HandlePut(const nfs::Message& message);
   template<typename Data>
   void HandleDelete(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
-  void HandlePutResult(const nfs::Reply& overall_result,
-                       const nfs::Message& message,
-                       routing::ReplyFunctor reply_functor);
-
-  void SendReplyAndAddToAccumulator(const nfs::Message& message,
-                                    const routing::ReplyFunctor& reply_functor,
-                                    const nfs::Reply& reply);
+  void HandlePutCallback(const std::string& reply, const nfs::Message& message);
+  template<typename Data>
+  void SendPutResult(const nfs::Message& message, bool result);
 
   // =============== Sync ==========================================================================
   void Sync(const PmidName& account_name);
@@ -79,9 +75,6 @@ class PmidAccountHolderService {
 
   template<typename Data, nfs::MessageAction action>
   void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
-  template<typename Data, nfs::MessageAction action>
-  void ReplyToMetadataManagers(const std::vector<PmidAccountResolvedEntry>& resolved_entries,
-                               const PmidName& pmid_name);
 
   routing::Routing& routing_;
   std::mutex accumulator_mutex_;

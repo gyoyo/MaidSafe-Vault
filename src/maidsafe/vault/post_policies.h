@@ -158,12 +158,14 @@ class PmidAccountHolderMiscellaneousPolicy {
     routing_.SendGroup(target_node_id, message_wrapper.Serialise()->string(), false, nullptr);
   }
 
-  /*void ReplyToMetadataManagers() {
-    GetTagValueAndIdentityVisitor type_and_name_visitor;
-    auto type_and_name(boost::apply_visitor(type_and_name_visitor, resolved_entry.key.first));
-    nfs::Message::Data data(type_and_name.first, type_and_name.second, NonEmptyString(), Action);
+  template<typename Data>
+  void SendPutResult(const typename Data::name_type& data_name,
+                     const NonEmptyString& serialised_put_result) {
+    nfs::Message::Data data(data_name, serialised_put_result, nfs::MessageAction::kPutResult);
     nfs::Message message(nfs::Persona::kMetadataManager, kSource_, data, kPmid_.name());
-  }*/
+    nfs::MessageWrapper message_wrapper(message.Serialise());
+    routing_.SendGroup(NodeId(data_name), message_wrapper.Serialise()->string(), false, nullptr);
+  }
 
  private:
   routing::Routing& routing_;

@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 maidsafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use. The use of this code is governed by the licence file licence.txt found in the root of     *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit written *
- *  permission of the board of directors of MaidSafe.net.                                          *
- **************************************************************************************************/
+/* Copyright 2013 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/vault/metadata_manager/metadata_merge_policy.h"
 
@@ -43,7 +47,9 @@ void MetadataMergePolicy::Merge(const UnresolvedEntry& unresolved_entry) {
       !unresolved_entry.dont_add_to_db) {
     MergePut(unresolved_entry.key.first.name(), GetDataSize(unresolved_entry));
   } else if (unresolved_entry.key.second == nfs::MessageAction::kDelete) {
-//    MergeDelete(unresolved_entry.key.first, serialised_db_value);
+    MergeDelete(unresolved_entry.key.first.name(), GetDataSize(unresolved_entry));
+  } else if (unresolved_entry.key.second == nfs::MessageAction::kAccountTransfer) {
+    MergeRecordTransfer(unresolved_entry);
   } else {
     ThrowError(CommonErrors::invalid_parameter);
   }
@@ -69,6 +75,7 @@ int MetadataMergePolicy::GetDataSize(
 
   if (all_data_size.empty())
     ThrowError(CommonErrors::unknown);
+  assert(all_data_size.size() == 1);
   if (most_frequent > static_cast<size_t>(routing::Parameters::node_group_size / 2))
     return most_frequent_itr->value.get().data_size;
 
@@ -88,8 +95,13 @@ void MetadataMergePolicy::MergePut(const DataNameVariant& data_name, int data_si
   }
 }
 
-void MetadataMergePolicy::MergeDelete(const DataNameVariant& /*data_name*/,
-                                      const NonEmptyString& /*serialised_db_value*/) {
+// TODO need to send delete messasge to PAH
+void MetadataMergePolicy::MergeDelete(const DataNameVariant& data_name, int data_size) {
+  if (data_size != 0) {
+    Metadata metadata(data_name, metadata_db_, data_size);
+    --(*metadata.value_.subscribers);
+    metadata.SaveChanges(metadata_db_);
+  }
 }
 
 std::vector<MetadataMergePolicy::UnresolvedEntry> MetadataMergePolicy::MergeRecordTransfer(
@@ -138,9 +150,8 @@ std::vector<MetadataMergePolicy::UnresolvedEntry> MetadataMergePolicy::MergeReco
     if (i.second >= routing::Parameters::node_group_size - 1U)
       metadata_value.offline_pmid_name.insert(i.first);
   // FIXME need to return unresolved pmid_names to Ping/Get data
-  // Updating DB
   Metadata metadata(unresolved_entry.key.first.name(), metadata_db_, metadata_value.data_size);
-  // FIXME free function needed to merge db value with resolved db value
+  metadata.value_ = metadata_value;   // Overwriting DB here
   metadata.SaveChanges(metadata_db_);
   return extra_unresolved_data;
 }

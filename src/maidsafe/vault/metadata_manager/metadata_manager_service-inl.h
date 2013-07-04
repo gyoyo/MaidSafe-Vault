@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_MANAGER_SERVICE_INL_H_
 #define MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_MANAGER_SERVICE_INL_H_
@@ -127,10 +131,11 @@ void MetadataManagerService::HandleMessage(const nfs::Message& message,
     case nfs::MessageAction::kGet:
       return HandleGet<Data>(message, reply_functor);
     case nfs::MessageAction::kDelete:
-      return HandleDelete<Data>(message, reply_functor);
+      return HandleDelete<Data>(message);
     case nfs::MessageAction::kSynchronise:
-    case nfs::MessageAction::kAccountTransfer:
       return HandleSync(message);
+    case nfs::MessageAction::kAccountTransfer:
+      return HandleRecordTransfer(message);
     default: {
       reply = nfs::Reply(VaultErrors::operation_not_supported, message.Serialise().data);
       std::lock_guard<std::mutex> lock(accumulator_mutex_);
@@ -302,42 +307,21 @@ void MetadataManagerService::IntegrityCheck(std::shared_ptr<GetHandler<Data>> /*
 }
 
 template<typename Data>
-void MetadataManagerService::HandleDelete(const nfs::Message& message,
-                                          const routing::ReplyFunctor& reply_functor) {
+void MetadataManagerService::HandleDelete(const nfs::Message& message) {
   try {
     ValidateDeleteSender(message);
     // wait for 3 requests
-
-    typename Data::name_type data_name(message.data().name);
-    metadata_handler_.template DecrementSubscribers<Data>(data_name);
-    // Decrement should send delete to PMID's on event data is actually deleted
-    detail::SendReply(message, MakeError(CommonErrors::success), reply_functor);
+    if (detail::AddResult(message, nullptr, MakeError(CommonErrors::success),
+                          accumulator_, accumulator_mutex_, kDeleteRequestsRequired_)) {
+      MetadataValue metadata_value(-1); // TODO(Prakash) is data size useful for delete ops?
+      AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kDelete>(message, metadata_value);
+      // After merge, decrement should send delete to PMID's on event data is actually deleted
+    }
   }
-  catch (...) {}
-
+  catch (...) {
+    LOG(kWarning) << "Error during HandleDelete: ";
+  }
 }
-
-//TODO(Prakash) Change this to service to handle data stored/ not stored message and then sync
-//template<typename Data>
-//void MetadataManagerService::HandlePutResult(const nfs::Reply& overall_result) {
-//  if (overall_result.IsSuccess())
-//    return;
-
-//  try {
-//    nfs::Message original_message(nfs::Message::serialised_type(overall_result.data()));
-//    if (!ThisVaultInGroupForData(original_message)) {
-//      LOG(kInfo) << "Stopping retries for Put, since no longer responsible for this data.";
-//      return;
-//    }
-
-//    Data data(typename Data::name_type(original_message.data().name),
-//              typename Data::serialised_type(original_message.data().content));
-//    Put(data, PmidName(Identity(routing_.RandomConnectedNode().string())));
-//  }
-//  catch(const std::exception& e) {
-//    LOG(kError) << "Error retrying Put: " << e.what();
-//  }
-//}
 
 template<typename Data>
 void MetadataManagerService::HandleGetReply(std::string serialised_reply) {
@@ -365,18 +349,7 @@ void MetadataManagerService::AddLocalUnresolvedEntryThenSync(
                                                                     routing_.kNodeId()));
   metadata_handler_.AddLocalUnresolvedEntry(unresolved_entry);
   typename Data::name_type data_name(message.data().name);
-  Sync<Data>(data_name);
-}
-
-// =============== Sync ============================================================================
-
-template<typename Data>
-void MetadataManagerService::Sync(const typename Data::name_type& data_name) {
-  auto serialised_sync_data(metadata_handler_.GetSyncData<Data>(data_name));
-  if (!serialised_sync_data.IsInitialised())  // Nothing to sync
-    return;
-
-  nfs_.Sync<Data>(data_name, serialised_sync_data);
+  Sync();
 }
 
 }  // namespace vault

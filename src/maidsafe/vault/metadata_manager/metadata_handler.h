@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_HANDLER_H_
 #define MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_HANDLER_H_
@@ -81,10 +85,10 @@ class MetadataHandler {
   template<typename Data>
   std::vector<PmidName> GetOnlineDataHolders(const typename Data::name_type& data_name) const;
 
-//  template<typename Data>
-//  bool CheckMetadataExists(const typename Data::name_type& data_name) const;
+  template<typename Data>
+  bool CheckMetadataExists(const typename Data::name_type& data_name) const;
 
-  // Returns a pair of - is duplicate data and its cost.
+  // Returns a pair of - is already stored and its cost.
   // Checks for duplication of unique data (throws)
   template<typename Data>
   std::pair<bool, int32_t> CheckPut(const typename Data::name_type& data_name, int32_t data_size);
@@ -96,8 +100,10 @@ class MetadataHandler {
   serialised_record_type GetSerialisedRecord(const DataNameVariant& data_name);
   template <typename Data>
   NonEmptyString GetSyncData(const typename Data::name_type& data_name);
-  void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
-  void ReplaceNodeInSyncList(const MetadataManager::RecordName& record_name,
+  std::vector<MetadataUnresolvedEntry> GetSyncData();
+  void ApplySyncData(const NonEmptyString& serialised_unresolved_entry);
+  void ApplyRecordTransfer(const NonEmptyString& serialised_unresolved_entries);
+  void ReplaceNodeInSyncList(const DataNameVariant& record_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
 

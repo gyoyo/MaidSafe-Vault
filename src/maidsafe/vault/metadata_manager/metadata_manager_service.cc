@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/vault/metadata_manager/metadata_manager_service.h"
 
@@ -118,7 +122,7 @@ void MetadataManagerService::HandleNodeDown(const nfs::Message& /*message*/) {
       // TODO(Team): Get content. There is no manager available yet.
 
       // Select new holder
-      NodeId new_holder(routing_.GetRandomExistingNode());
+      NodeId new_holder(routing_.RandomConnectedNode());
 
       // TODO(Team): Put content. There is no manager available yet.
     }
@@ -147,6 +151,13 @@ bool MetadataManagerService::ThisVaultInGroupForData(const nfs::Message& message
 
 // =============== Sync and Record transfer =====================================================
 
+void MetadataManagerService::Sync() {
+  auto unresolved_entries(metadata_handler_.GetSyncData());
+  for (const auto& unresolved_entry : unresolved_entries) {
+    nfs_.Sync(unresolved_entry.key.first.name(), unresolved_entry.Serialise());
+  }
+}
+
 void MetadataManagerService::HandleSync(const nfs::Message& message) {
   metadata_handler_.ApplySyncData(NonEmptyString(message.data().content.string()));
 }
@@ -154,6 +165,10 @@ void MetadataManagerService::HandleSync(const nfs::Message& message) {
 void MetadataManagerService::TransferRecord(const DataNameVariant& record_name,
                                             const NodeId& new_node) {
   nfs_.TransferRecord(record_name, new_node, metadata_handler_.GetSerialisedRecord(record_name));
+}
+
+void MetadataManagerService::HandleRecordTransfer(const nfs::Message& message) {
+  metadata_handler_.ApplyRecordTransfer(NonEmptyString(message.data().content.string()));
 }
 
 // =============== Churn ===========================================================================

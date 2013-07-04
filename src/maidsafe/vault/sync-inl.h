@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2013 maidsafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use. The use of this code is governed by the licence file licence.txt found in the root of     *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit written *
- *  permission of the board of directors of MaidSafe.net.                                          *
- **************************************************************************************************/
+/* Copyright 2013 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_SYNC_INL_H_
 #define MAIDSAFE_VAULT_SYNC_INL_H_
@@ -180,30 +184,7 @@ void Sync<MergePolicy>::ReplaceNode(const typename MergePolicy::DbKey& db_key,
 }
 
 template<typename MergePolicy>
-typename MergePolicy::UnresolvedEntriesItr Sync<MergePolicy>::ReplaceNodeAndIncrementItr(
-    typename MergePolicy::UnresolvedEntriesItr entries_itr,
-    const NodeId& old_node,
-    const NodeId& new_node) {
-  auto found(detail::FindInMessages<MergePolicy>(*entries_itr, old_node));
-  if (found == std::end((*entries_itr).messages_contents)) {
-    (*entries_itr).messages_contents.emplace_back();
-    (*entries_itr).messages_contents.back().peer_id = new_node;
-  } else {
-    (*found).peer_id = new_node;
-  }
-
-  if (detail::IsResolved<MergePolicy>(*entries_itr)) {
-    MergePolicy::Merge(*entries_itr);
-    entries_itr = MergePolicy::unresolved_data_.erase(entries_itr);
-  } else {
-    ++entries_itr;
-  }
-  return entries_itr;
-}
-
-template<typename MergePolicy>
-std::vector<typename MergePolicy::UnresolvedEntry> Sync<MergePolicy>::GetUnresolvedData(
-    bool /*increment_sync_attempts*/) {
+std::vector<typename MergePolicy::UnresolvedEntry> Sync<MergePolicy>::GetUnresolvedData() {
   std::vector<typename MergePolicy::UnresolvedEntry> result;
   auto itr = std::begin(MergePolicy::unresolved_data_);
   while (itr != std::end(MergePolicy::unresolved_data_)) {
@@ -229,18 +210,22 @@ std::vector<typename MergePolicy::UnresolvedEntry> Sync<MergePolicy>::GetUnresol
 }
 
 template<typename MergePolicy>
-size_t Sync<MergePolicy>::GetUnresolvedCount(const typename MergePolicy::DbKey& db_key) const {
-  return std::count_if(MergePolicy::unresolved_data_.begin(),
-                       MergePolicy::unresolved_data_.end(),
-                       [&db_key] (const typename MergePolicy::UnresolvedEntry& unresolved_data) {
-                           return (unresolved_data.key.first == db_key);
-                       });
-}
-
-template<typename MergePolicy>
 bool Sync<MergePolicy>::CanBeErased(const typename MergePolicy::UnresolvedEntry& entry) const {
   return entry.sync_counter > sync_counter_max_ ||
          detail::IsResolvedOnAllPeers<MergePolicy>(entry, this_node_id_);
+}
+
+template<typename MergePolicy>
+void Sync<MergePolicy>::IncrementSyncAttempts() {
+  auto itr = std::begin(MergePolicy::unresolved_data_);
+  while (itr != std::end(MergePolicy::unresolved_data_)) {
+    assert((*itr).messages_contents.size() <= routing::Parameters::node_group_size);
+    ++(*itr).sync_counter;
+    if (CanBeErased(*itr))
+      itr = MergePolicy::unresolved_data_.erase(itr);
+    else
+      ++itr;
+  }
 }
 
 }  // namespace vault

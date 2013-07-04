@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_POST_POLICIES_H_
 #define MAIDSAFE_VAULT_POST_POLICIES_H_
@@ -90,14 +94,14 @@ class ManagersSyncPolicy {  // for Metadata manager & structured data manager
     routing_.SendDirect(target_node_id, message_wrapper.Serialise()->string(), false, nullptr);
   }
 
-  template<typename Data>
-  void Sync(const typename Data::name_type& data_name, const NonEmptyString& serialised_sync_data) {
-    nfs::Message::Data data(Data::name_type::tag_type::kEnumValue, data_name.data,
-                            serialised_sync_data, nfs::MessageAction::kSynchronise);
+  void Sync(const DataNameVariant& record_name, const NonEmptyString& serialised_sync_data) {
+    auto type_and_name(boost::apply_visitor(GetTagValueAndIdentityVisitor(), record_name));
+    nfs::Message::Data data(type_and_name.first, type_and_name.second, serialised_sync_data,
+                            nfs::MessageAction::kSynchronise);
     nfs::Message message(source_persona, kSource_, data);
     nfs::MessageWrapper message_wrapper(message.Serialise());
-    routing_.SendGroup(NodeId(data_name->string()), message_wrapper.Serialise()->string(), false,
-                       nullptr);
+    routing_.SendGroup(NodeId(type_and_name.second), message_wrapper.Serialise()->string(),
+                       false, nullptr);
   }
 
  private:

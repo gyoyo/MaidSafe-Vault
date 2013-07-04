@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_MANAGER_SERVICE_H_
 #define MAIDSAFE_VAULT_METADATA_MANAGER_METADATA_MANAGER_SERVICE_H_
@@ -87,7 +91,7 @@ class MetadataManagerService {
   template<typename Data>
   void IntegrityCheck(std::shared_ptr<GetHandler<Data>> get_handler);
   template<typename Data>
-  void HandleDelete(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
+  void HandleDelete(const nfs::Message& message);
 
   void ValidatePutSender(const nfs::Message& message) const;
   void ValidateGetSender(const nfs::Message& message) const;
@@ -112,11 +116,10 @@ class MetadataManagerService {
                                        const MetadataValue& metadata_value);
 
   // =============== Sync and Record transfer =====================================================
-  template<typename Data>
-  void Sync(const typename Data::name_type& data_name);
+  void Sync();
   void HandleSync(const nfs::Message& message);
   void TransferRecord(const DataNameVariant& record_name, const NodeId& new_node);
-
+  void HandleRecordTransfer(const nfs::Message& message);
   routing::Routing& routing_;
   nfs::PublicKeyGetter& public_key_getter_;
   std::mutex accumulator_mutex_;

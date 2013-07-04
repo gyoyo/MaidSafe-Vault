@@ -1,13 +1,17 @@
-/***************************************************************************************************
- *  Copyright 2012 MaidSafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of MaidSafe.net limited and is not meant for external    *
- *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit         *
- *  written permission of the board of directors of MaidSafe.net.                                  *
- **************************************************************************************************/
+/* Copyright 2013 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #ifndef MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MANAGER_SERVICE_INL_H_
 #define MAIDSAFE_VAULT_STRUCTURED_DATA_MANAGER_STRUCTURED_DATA_MANAGER_SERVICE_INL_H_
@@ -63,11 +67,11 @@ void StructuredDataManagerService::HandleMessage(const nfs::Message& message,
 
    // accumulate then action, on completion then set reply
    std::lock_guard<std::mutex> lock(accumulator_mutex_);
-   if (accumulator_.PushSingleResult(
+   if (!(accumulator_.PushSingleResult(
          message,
          reply_functor,
-         nfs::Reply(maidsafe_error(CommonErrors::pending_result))).size() >=
-             routing::Parameters::node_group_size -1U) {
+         nfs::Reply(maidsafe_error(CommonErrors::pending_result))).size() <
+         routing::Parameters::node_group_size -1U)) {
      Synchronise<Data>(message);
    }
 }
@@ -77,6 +81,8 @@ void StructuredDataManagerService::HandleMessage(const nfs::Message& message,
 template<typename Data>
 void StructuredDataManagerService::AddLocalUnresolvedEntryThenSync(const nfs::Message& message) {
   auto entry =  detail::UnresolvedEntryFromMessage(message);
+  nfs_.Sync(DataNameVariant(Data::name_type(message.data().name)), entry.Serialise().data);  // does not include
+                                                                            // original_message_id
   entry.original_message_id = message.message_id();
   entry.source_node_id = message.source().node_id;
   std::lock_guard<std::mutex> lock(sync_mutex_);

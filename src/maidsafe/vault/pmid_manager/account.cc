@@ -32,7 +32,7 @@ const size_t PmidAccount::kSyncTriggerCount_(1);
 PmidAccount::PmidAccount(const PmidName& pmid_name,  Db& db, const NodeId& this_node_id)
     : pmid_name_(pmid_name),
       pmid_record_(pmid_name),
-      pmid_node_status_(DataHolderStatus::kUp),
+      pmid_node_status_(PmidNodeStatus::kUp),
       account_db_(new AccountDb(db)),
       sync_(account_db_.get(), this_node_id),
       account_transfer_nodes_(0) {}
@@ -144,23 +144,16 @@ bool PmidAccount::ApplyAccountTransfer(const NodeId& source_id,
         static_cast<DataTagValue>(proto_pmid_account_details.db_entry(i).type()),
         Identity(proto_pmid_account_details.db_entry(i).name())));
     int32_t size(proto_pmid_account_details.db_entry(i).value().size());
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account.cc
-    PmidAccountUnresolvedEntry entry(
-        std::make_pair(DbKey(data_name), nfs::MessageAction::kPut), size, source_id);
-    if (sync_.AddUnresolvedEntry(entry)) {
-=======
     PmidManagerUnresolvedEntry entry(
         std::make_pair(data_name, nfs::MessageAction::kPut), size, source_id);
-    if (sync_.AddAccountTransferRecord(entry, all_account_transfers_received).size() == 1U) {
->>>>>>> next:src/maidsafe/vault/pmid_manager/account.cc
+    if (sync_.AddAccountTransferRecord(entry, all_account_transfers_received).size() == 1U)
       pmid_record_.stored_total_size += size;
-    }
   }
 
   for (int i(0); i != proto_pmid_account_details.serialised_unresolved_entry_size(); ++i) {
     PmidManagerUnresolvedEntry entry(PmidManagerUnresolvedEntry::serialised_type(
         NonEmptyString(proto_pmid_account_details.serialised_unresolved_entry(i))));
-    if (sync_.AddUnresolvedEntry(entry) && entry.messages_contents.front().value)
+    if (!sync_.AddUnresolvedEntry(entry).empty() && entry.messages_contents.front().value)
       pmid_record_.stored_total_size += *entry.messages_contents.front().value;
   }
 
@@ -187,12 +180,7 @@ NonEmptyString PmidAccount::GetSyncData() {
   return NonEmptyString(proto_unresolved_entries.SerializeAsString());
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account.cc
 void PmidAccount::ApplySyncData(const NonEmptyString& serialised_unresolved_entries) {
-=======
-std::vector<PmidManagerUnresolvedEntry> PmidAccount::ApplySyncData(const NonEmptyString& serialised_unresolved_entries) {
-  std::vector<PmidManagerUnresolvedEntry> resolved_entries;
->>>>>>> next:src/maidsafe/vault/pmid_manager/account.cc
   protobuf::UnresolvedEntries proto_unresolved_entries;
   if (!proto_unresolved_entries.ParseFromString(serialised_unresolved_entries.string()))
     ThrowError(CommonErrors::parsing_error);
@@ -200,7 +188,7 @@ std::vector<PmidManagerUnresolvedEntry> PmidAccount::ApplySyncData(const NonEmpt
   for (int i(0); i != proto_unresolved_entries.serialised_unresolved_entry_size(); ++i) {
     PmidManagerUnresolvedEntry entry(PmidManagerUnresolvedEntry::serialised_type(
         NonEmptyString(proto_unresolved_entries.serialised_unresolved_entry(i))));
-    if (sync_.AddUnresolvedEntry(entry) && entry.messages_contents.front().value) {
+    if (!sync_.AddUnresolvedEntry(entry).empty() && entry.messages_contents.front().value) {
       if (entry.key.second == nfs::MessageAction::kPut)
         pmid_record_.stored_total_size += *entry.messages_contents.front().value;
       else
@@ -223,8 +211,8 @@ PmidAccount::name_type PmidAccount::name() const {
   return pmid_name_;
 }
 
-PmidAccount::DataHolderStatus PmidAccount::data_holder_status() const {
-  return data_holder_status_;
+PmidAccount::PmidNodeStatus PmidAccount::pmid_node_status() const {
+  return pmid_node_status_;
 }
 
 int64_t PmidAccount::total_data_stored_by_pmids() const {

@@ -37,20 +37,15 @@ PmidManagerMergePolicy& PmidManagerMergePolicy::operator=(PmidManagerMergePolicy
   return *this;
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_merge_policy.cc
-void PmidAccountMergePolicy::Merge(const UnresolvedEntry& unresolved_entry) {
-  auto serialised_db_value(GetFromDb(unresolved_entry.key.first.name()));
-=======
 void PmidManagerMergePolicy::Merge(const UnresolvedEntry& unresolved_entry) {
   auto serialised_db_value(GetFromDb(unresolved_entry.key.first));
->>>>>>> next:src/maidsafe/vault/pmid_manager/merge_policy.cc
   if (unresolved_entry.key.second == nfs::MessageAction::kPut &&
       !unresolved_entry.dont_add_to_db &&
       unresolved_entry.messages_contents.front().value) {
-    MergePut(unresolved_entry.key.first.name(), *unresolved_entry.messages_contents.front().value,
+    MergePut(unresolved_entry.key.first, *unresolved_entry.messages_contents.front().value,
              serialised_db_value);
   } else if (unresolved_entry.key.second == nfs::MessageAction::kDelete) {
-    MergeDelete(unresolved_entry.key.first.name(), serialised_db_value);
+    MergeDelete(unresolved_entry.key.first, serialised_db_value);
   } else {
     ThrowError(CommonErrors::invalid_parameter);
   }

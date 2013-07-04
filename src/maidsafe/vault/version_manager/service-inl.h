@@ -62,7 +62,8 @@ void VersionManagerService::HandleMessage(const nfs::Message& message,
 
    if (message.data().action != nfs::MessageAction::kPut &&
        message.data().action != nfs::MessageAction::kDeleteBranchUntilFork &&
-       message.data().action != nfs::MessageAction::kDelete)
+       message.data().action != nfs::MessageAction::kDelete &&
+       message.data().action != nfs::MessageAction::kAccountTransfer)
      ThrowError(CommonErrors::invalid_parameter);
 
    // accumulate then action, on completion then set reply
@@ -79,20 +80,18 @@ void VersionManagerService::HandleMessage(const nfs::Message& message,
 // In this persona we sync all mutating actions, on sucess the reply_functor is fired (if available)
 
 template<typename Data>
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_manager_service-inl.h
-void StructuredDataManagerService::AddLocalUnresolvedEntryThenSync(const nfs::Message& message) {
-=======
 void VersionManagerService::Synchronise(const nfs::Message& message) {
->>>>>>> next:src/maidsafe/vault/version_manager/service-inl.h
   auto entry =  detail::UnresolvedEntryFromMessage(message);
   nfs_.Sync(DataNameVariant(Data::name_type(message.data().name)), entry.Serialise().data);  // does not include
                                                                             // original_message_id
   entry.original_message_id = message.message_id();
-  entry.source_node_id = message.source().node_id;
+  entry.source_node_id = message.source().node_id; // with data().originator_id we can
+                                                    // recover the accumulated requests in
+                                                    // HandleSync
   std::lock_guard<std::mutex> lock(sync_mutex_);
-  sync_.AddLocalEntry(entry);
-  Sync();
+  sync_.AddUnresolvedEntry(entry);
 }
+
 
 }  // namespace vault
 

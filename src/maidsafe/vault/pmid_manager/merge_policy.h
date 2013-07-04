@@ -34,23 +34,13 @@ namespace vault {
 
 class PmidManagerMergePolicy {
  public:
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_merge_policy.h
-  typedef PmidAccountUnresolvedEntry UnresolvedEntry;
-  typedef PmidAccountResolvedEntry ResolvedEntry;
-  typedef PmidAccountHolder::DbKey DbKey;
-  typedef AccountDb Database;
-
-  explicit PmidAccountMergePolicy(AccountDb* account_db);
-  PmidAccountMergePolicy(PmidAccountMergePolicy&& other);
-  PmidAccountMergePolicy& operator=(PmidAccountMergePolicy&& other);
-=======
   typedef PmidManagerUnresolvedEntry UnresolvedEntry;
   typedef PmidManagerResolvedEntry ResolvedEntry;
   typedef AccountDb Database;
   explicit PmidManagerMergePolicy(AccountDb* account_db);
   PmidManagerMergePolicy(PmidManagerMergePolicy&& other);
   PmidManagerMergePolicy& operator=(PmidManagerMergePolicy&& other);
->>>>>>> next:src/maidsafe/vault/pmid_manager/merge_policy.h
+
   // This flags a "Put" entry in 'unresolved_data_' as not to be added to the db.
   template<typename Data>
   int32_t AllowDelete(const typename Data::name_type& name);
@@ -94,7 +84,7 @@ int32_t PmidManagerMergePolicy::AllowDelete(const typename Data::name_type& name
   int32_t pending_puts(0), pending_deletes(0);
 
   while (itr != std::end(unresolved_data_)) {
-    if ((*itr).key.first.name() == name_as_variant) {
+    if ((*itr).key.first == name_as_variant) {
       if ((*itr).key.second == nfs::MessageAction::kPut) {
         if ((*itr).dont_add_to_db) {
           // A delete request must have been applied for this to be true, but it will (correctly)

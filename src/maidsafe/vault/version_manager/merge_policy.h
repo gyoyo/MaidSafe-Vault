@@ -54,13 +54,8 @@ class VersionManagerMergePolicy {
 
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_merge_policy.h
-  UnresolvedEntries unresolved_data_;
-  ManagerDb<StructuredDataManager>* db_;
-=======
   std::vector<UnresolvedEntry> unresolved_data_;
   ManagerDb<VersionManager>* db_;
->>>>>>> next:src/maidsafe/vault/version_manager/merge_policy.h
 
  private:
   VersionManagerMergePolicy(const VersionManagerMergePolicy&);

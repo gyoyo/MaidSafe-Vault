@@ -69,8 +69,7 @@ class VersionManagerService {
 
   //// =============== Sync ========================================================================
   template<typename Data>
-  void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
-  void Sync();
+  void Synchronise(const nfs::Message& message);
   void HandleSynchronise(const nfs::Message& message);
 
   //// =============== Churn ============================================================
@@ -82,13 +81,8 @@ class VersionManagerService {
   Accumulator<VersionManagerAccountName> accumulator_;
   ManagerDb<VersionManager> version_manager_db_;
   const NodeId kThisNodeId_;
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_manager_service.h
-  vault::Sync<StructuredDataMergePolicy> sync_;
-  StructuredDataManagerNfs nfs_;
-=======
   Sync<VersionManagerMergePolicy> sync_;
   VersionManagerNfs nfs_;
->>>>>>> next:src/maidsafe/vault/version_manager/service.h
 };
 
 }  // namespace vault

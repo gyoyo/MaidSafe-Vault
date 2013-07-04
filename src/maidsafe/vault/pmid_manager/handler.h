@@ -31,7 +31,6 @@ License.
 
 
 namespace maidsafe {
-
 namespace vault {
 
 class PmidAccountHandler {
@@ -46,7 +45,7 @@ class PmidAccountHandler {
                             const PmidAccount::serialised_type& serialised_pmid_account_details);
   void AddAccount(std::unique_ptr<PmidAccount> pmid_account);
   void DeleteAccount(const PmidName& account_name);
-  PmidAccount::DataHolderStatus AccountStatus(const PmidName& account_name) const;
+  PmidAccount::PmidNodeStatus AccountStatus(const PmidName& account_name) const;
   void SetDataHolderGoingDown(const PmidName& account_name);
   void SetDataHolderDown(const PmidName& account_name);
   void SetDataHolderGoingUp(const PmidName& account_name);
@@ -60,11 +59,7 @@ class PmidAccountHandler {
   std::vector<PmidName> GetAccountNames() const;
   PmidAccount::serialised_type GetSerialisedAccount(const PmidName& account_name) const;
   NonEmptyString GetSyncData(const PmidName& account_name);
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_handler.h
   void ApplySyncData(const PmidName& account_name,
-=======
-  std::vector<PmidManagerResolvedEntry> ApplySyncData(const PmidName& account_name,
->>>>>>> next:src/maidsafe/vault/pmid_manager/handler.h
                      const NonEmptyString& serialised_unresolved_entries);
   void ReplaceNodeInSyncList(const PmidName& account_name,
                              const NodeId& old_node,
@@ -90,7 +85,6 @@ class PmidAccountHandler {
 };
 
 }  // namespace vault
-
 }  // namespace maidsafe
 
 #include "maidsafe/vault/pmid_manager/handler-inl.h"

@@ -50,13 +50,8 @@ PmidManagerService::PmidManagerService(const passport::Pmid& pmid,
       pmid_account_handler_(db, routing.kNodeId()),
       nfs_(routing, pmid) {}
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-void PmidAccountHolderService::HandleMessage(const nfs::Message& message,
-                                             const routing::ReplyFunctor& /*reply_functor*/) {
-=======
 void PmidManagerService::HandleMessage(const nfs::Message& message,
-                                             const routing::ReplyFunctor& reply_functor) {
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
+                                       const routing::ReplyFunctor& /*reply_functor*/) {
   ValidateGenericSender(message);
   nfs::Reply reply(CommonErrors::success);
   nfs::MessageAction action(message.data().action);
@@ -69,16 +64,14 @@ void PmidManagerService::HandleMessage(const nfs::Message& message,
       return HandleSync(message);
     case nfs::MessageAction::kAccountTransfer:
       return HandleAccountTransfer(message);
-    case nfs::MessageAction::kGetPmidTotals:
-      return HandleGetPmidTotals(message, reply_functor);
     default:
       LOG(kError) << "Unhandled Post action type";
   }
 }
 
-void PmidAccountHolderService::CreatePmidAccount(const nfs::Message& message) {
+void PmidManagerService::CreatePmidAccount(const nfs::Message& message) {
   try {
-    pmid_account_handler_.CreateAccount(message.data_holder());
+    pmid_account_handler_.CreateAccount(message.pmid_node());
   }
   catch(const maidsafe_error& error) {
     LOG(kWarning) << error.what();
@@ -88,12 +81,7 @@ void PmidAccountHolderService::CreatePmidAccount(const nfs::Message& message) {
   }
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-void PmidAccountHolderService::GetPmidTotals(const nfs::Message& message) {
-=======
-void PmidManagerService::HandleGetPmidTotals(const nfs::Message& message,
-                                                   const routing::ReplyFunctor& reply_functor) {
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
+void PmidManagerService::GetPmidTotals(const nfs::Message& message) {
   try {
     PmidRecord pmid_record(pmid_account_handler_.GetPmidRecord(PmidName(message.data().name)));
     if (!pmid_record.pmid_name.data.string().empty()) {
@@ -109,12 +97,7 @@ void PmidManagerService::HandleGetPmidTotals(const nfs::Message& message,
   }
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-void PmidAccountHolderService::HandleChurnEvent(routing::MatrixChange matrix_change) {
-=======
 void PmidManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
-//  CheckAccounts();
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
   auto account_names(pmid_account_handler_.GetAccountNames());
   auto itr(std::begin(account_names));
   while (itr != std::end(account_names)) {
@@ -138,52 +121,7 @@ void PmidManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
   }
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-void PmidAccountHolderService::ValidateDataSender(const nfs::Message& message) const {
-=======
-void PmidManagerService::CheckAccounts() {
-//  // Non-archived
-//  std::vector<PmidName> accounts_held(pmid_account_handler_.GetAccountNames());
-//  for (auto it(accounts_held.begin()); it != accounts_held.end(); ++it) {
-//    bool is_connected(routing_.IsConnectedVault(NodeId(*it)));
-//    PmidAccount::DataHolderStatus account_status(pmid_account_handler_.AccountStatus(*it));
-//    if (AssessRange(*it, account_status, is_connected))
-//      it = accounts_held.erase(it);
-//  }
-
-//  // Archived
-//  pmid_account_handler_.PruneArchivedAccounts(
-//      [this] (const PmidName& pmid_name) {
-//        return routing::GroupRangeStatus::kOutwithRange ==
-//               routing_.IsNodeIdInGroupRange(NodeId(pmid_name));
-//      });
-}
-
-bool PmidManagerService::AssessRange(const PmidName& account_name,
-                                           PmidAccount::DataHolderStatus account_status,
-                                           bool is_connected) {
-  int temp_int(0);
-  switch (temp_int/*routing_.IsNodeIdInGroupRange(NodeId(account_name))*/) {
-    // TODO(Team): Change to check the range
-    case 0 /*routing::kOutwithRange*/:
-//        pmid_account_handler_.MoveAccountToArchive(account_name);
-        return true;
-    case 1 /*routing::kInProximalRange*/:
-        // serialise the memory deque and put to file
-        return false;
-    case 2 /*routing::kInRange*/:
-        if (account_status == PmidAccount::DataHolderStatus::kUp && !is_connected) {
-          InformOfDataHolderDown(account_name);
-        } else if (account_status == PmidAccount::DataHolderStatus::kDown && is_connected) {
-          InformOfDataHolderUp(account_name);
-        }
-        return false;
-    default: return false;
-  }
-}
-
 void PmidManagerService::ValidateDataSender(const nfs::Message& message) const {
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
   if (!message.HasDataHolder()
       || !routing_.IsConnectedVault(NodeId(message.pmid_node()->string()))
       || routing_.EstimateInGroup(message.source().node_id, NodeId(message.data().name)))
@@ -202,21 +140,6 @@ void PmidManagerService::ValidateGenericSender(const nfs::Message& message) cons
     ThrowError(CommonErrors::invalid_parameter);
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-=======
-// =============== Put/Delete data ================================================================
-
-void PmidManagerService::SendReplyAndAddToAccumulator(
-    const nfs::Message& message,
-    const routing::ReplyFunctor& reply_functor,
-    const nfs::Reply& reply) {
-  reply_functor(reply.Serialise()->string());
-  std::lock_guard<std::mutex> lock(accumulator_mutex_);
-  accumulator_.SetHandled(message, reply);
-}
-
-
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
 // =============== Sync ===========================================================================
 
 void PmidManagerService::Sync(const PmidName& account_name) {
@@ -241,7 +164,6 @@ void PmidManagerService::HandleSync(const nfs::Message& message) {
 
   pmid_account_handler_.ApplySyncData(PmidName(Identity(proto_sync.account_name())),
                                       NonEmptyString(proto_sync.serialised_unresolved_entries()));
-  //ReplyToDataManagers(resolved_entries);
 }
 
 // =============== Account transfer ===============================================================
@@ -271,64 +193,6 @@ void PmidManagerService::HandleAccountTransfer(const nfs::Message& message) {
 }
 
 // =============== DataHolder =====================================================================
-
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.cc
-=======
-void PmidManagerService::InformOfDataHolderDown(const PmidName& pmid_name) {
-  pmid_account_handler_.SetDataHolderGoingDown(pmid_name);
-  InformAboutDataHolder(pmid_name, false);
-  pmid_account_handler_.SetDataHolderDown(pmid_name);
-}
-
-void PmidManagerService::InformOfDataHolderUp(const PmidName& pmid_name) {
-  pmid_account_handler_.SetDataHolderGoingUp(pmid_name);
-  InformAboutDataHolder(pmid_name, true);
-  pmid_account_handler_.SetDataHolderUp(pmid_name);
-}
-
-void PmidManagerService::InformAboutDataHolder(const PmidName& /*pmid_name*/, bool /*node_up*/) {
-  // TODO(Team): Decide on a better strategy instead of sleep
-//  Sleep(boost::posix_time::minutes(3));
-//  auto names(pmid_account_handler_.GetArchiveFileNames(pmid_name));
-//  for (auto ritr(names.rbegin()); ritr != names.rend(); ++ritr) {
-//    if (StatusHasReverted(pmid_name, node_up)) {
-//      RevertMessages(pmid_name, names.rbegin(), ritr, !node_up);
-//      return;
-//    }
-
-//    std::set<PmidName> data_manager_ids(GetDataNamesInFile(pmid_name, *ritr));
-//    SendMessages(pmid_name, data_manager_ids, node_up);
-//  }
-}
-
-void PmidManagerService::RevertMessages(const PmidName& pmid_name,
-                                              const std::vector<fs::path>::reverse_iterator& begin,
-                                              std::vector<fs::path>::reverse_iterator& current,
-                                              bool node_up) {
-  while (current != begin) {
-    std::set<PmidName> data_manager_ids(GetDataNamesInFile(pmid_name, *current));
-    SendMessages(pmid_name, data_manager_ids, node_up);
-    --current;
-  }
-
-  node_up ?  pmid_account_handler_.SetDataHolderUp(pmid_name) :
-             pmid_account_handler_.SetDataHolderDown(pmid_name);
-}
-
-std::set<PmidName> PmidManagerService::GetDataNamesInFile(
-    const PmidName& /*pmid_name*/, const boost::filesystem::path& /*path*/) const {
-  return std::set<PmidName>();
-}
-
-void PmidManagerService::SendMessages(const PmidName& /*pmid_name*/,
-                                            const std::set<PmidName>& /*data_manager_ids*/,
-                                            bool /*node_up*/) {
-//  for (const PmidName& data_manager_id : data_manager_ids) {
-    //  TODO(dirvine) implement
-        //    nfs_.DataHolderStatusChanged(NodeId(data_manager_id), NodeId(pmid_name), node_up);
-//  }
-}
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.cc
 
 }  // namespace vault
 }  // namespace maidsafe

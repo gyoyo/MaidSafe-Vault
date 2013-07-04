@@ -58,7 +58,7 @@ void PmidAccountHandler::DeleteAccount(const PmidName& account_name) {
   pmid_accounts_.erase(account_name);
 }
 
-PmidAccount::DataHolderStatus PmidAccountHandler::AccountStatus(
+PmidAccount::PmidNodeStatus PmidAccountHandler::AccountStatus(
     const PmidName& account_name) const {
   std::lock_guard<std::mutex> lock(mutex_);
   return pmid_accounts_.at(account_name)->pmid_node_status();
@@ -115,11 +115,7 @@ NonEmptyString PmidAccountHandler::GetSyncData(const PmidName& account_name) {
   return pmid_accounts_.at(account_name)->GetSyncData();
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_handler.cc
 void PmidAccountHandler::ApplySyncData(const PmidName& account_name,
-=======
-std::vector<PmidManagerUnresolvedEntry> PmidAccountHandler::ApplySyncData(const PmidName& account_name,
->>>>>>> next:src/maidsafe/vault/pmid_manager/handler.cc
                                        const NonEmptyString& serialised_unresolved_entries) {
   std::lock_guard<std::mutex> lock(mutex_);
   return pmid_accounts_.at(account_name)->ApplySyncData(serialised_unresolved_entries);

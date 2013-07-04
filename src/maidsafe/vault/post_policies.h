@@ -150,18 +150,14 @@ class PmidManagerMiscellaneousPolicy {
  public:
   PmidManagerMiscellaneousPolicy(routing::Routing& routing, const passport::Pmid& pmid)
       : routing_(routing),
-<<<<<<< HEAD
-        kSource_(nfs::Persona::kPmidAccountHolder, routing_.kNodeId()),
-=======
-        kSource_(nfs::Persona::kMaidManager, routing_.kNodeId()),
->>>>>>> next
+        kSource_(nfs::Persona::kPmidManager, routing_.kNodeId()),
         kPmid_(pmid) {}
 
   void ReturnPmidTotals(const NodeId& target_node_id,
                         const nfs::Reply::serialised_type& serialised_reply) {
     nfs::Message::Data data(Identity(target_node_id.string()), serialised_reply.data,
                             nfs::MessageAction::kPmidTotals);
-    nfs::Message message(nfs::Persona::kMaidAccountHolder, kSource_, data);
+    nfs::Message message(nfs::Persona::kMaidManager, kSource_, data);
     nfs::MessageWrapper message_wrapper(message.Serialise());
     routing_.SendGroup(target_node_id, message_wrapper.Serialise()->string(), false, nullptr);
   }
@@ -170,7 +166,7 @@ class PmidManagerMiscellaneousPolicy {
   void SendPutResult(const typename Data::name_type& data_name,
                      const NonEmptyString& serialised_put_result) {
     nfs::Message::Data data(data_name, serialised_put_result, nfs::MessageAction::kPutResult);
-    nfs::Message message(nfs::Persona::kMetadataManager, kSource_, data, kPmid_.name());
+    nfs::Message message(nfs::Persona::kDataManager, kSource_, data, kPmid_.name());
     nfs::MessageWrapper message_wrapper(message.Serialise());
     routing_.SendGroup(NodeId(data_name), message_wrapper.Serialise()->string(), false, nullptr);
   }

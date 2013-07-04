@@ -108,19 +108,10 @@ std::vector<StructuredDataVersions::VersionName>
 NonEmptyString VersionManagerService::GetSerialisedRecord(
     const VersionManager::DbKey& db_key) {
   protobuf::UnresolvedEntries proto_unresolved_entries;
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_manager_service.cc
-  auto versions(structured_data_db_.Get(db_key));
-
-
-  StructuredDataKey structured_data_key;
-  //structured_data_key.
-  //StructuredDataUnresolvedEntry unresolved_entry_db_value(
-=======
   auto db_value(version_manager_db_.Get(db_key));
   VersionManagerKey version_manager_key;
   //version_manager_key.
   //VersionManagerUnresolvedEntry unresolved_entry_db_value(
->>>>>>> next:src/maidsafe/vault/version_manager/service.cc
   //    std::make_pair(data_name, nfs::MessageAction::kAccountTransfer), metadata_value,
   //      kThisNodeId_);
   //auto unresolved_data(sync_.GetUnresolvedData(data_name));
@@ -178,72 +169,38 @@ void VersionManagerService::HandleGetBranch(const nfs::Message& message,
  }
 }
 
+// // =============== Sync ============================================================================
 
-// =============== Sync ============================================================================
-
-void StructuredDataManagerService::Sync() {
-  std::vector<StructuredDataUnresolvedEntry> unresolved_entries;
-  {
-    std::lock_guard<std::mutex> lock(sync_mutex_);
-    unresolved_entries = sync_.GetUnresolvedData();
-  }
-
-  /*for (const auto& unresolved_entry : unresolved_entries) {
-  }*/
-
-
-  protobuf::UnresolvedEntries proto_unresolved_entries;
-  for (const auto& unresolved_entry : unresolved_entries) {
-    proto_unresolved_entries.add_serialised_unresolved_entry(
-        unresolved_entry.Serialise()->string());
-  }
-  //return NonEmptyString(proto_unresolved_entries.SerializeAsString());
-
-
-  //nfs_.Sync<Data>(DataNameVariant(Data::name_type(message.data().name)), entry.Serialise().data);  // does not include
-                                                                            // original_message_id
-}
-
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_manager_service.cc
-void StructuredDataManagerService::HandleSynchronise(const nfs::Message& message) {
-  boost::optional<StructuredDataResolvedEntry> resolved_entry;
-=======
 void VersionManagerService::HandleSynchronise(const nfs::Message& message) {
   std::vector<VersionManagerMergePolicy::UnresolvedEntry> unresolved_entries;
   bool success(false);
->>>>>>> next:src/maidsafe/vault/version_manager/service.cc
   try {
     {
       std::lock_guard<std::mutex> lock(sync_mutex_);
-      resolved_entry = sync_.AddUnresolvedEntry(detail::UnresolvedEntryFromMessage(message));
+      unresolved_entries = sync_.AddUnresolvedEntry(detail::UnresolvedEntryFromMessage(message));
     }
-  } catch (const std::exception& e) {
+    success = true;
+  } catch (std::exception& e) {
     LOG(kError) << "invalid request" << e.what();
+    success = false;
   }
-  if (resolved_entry) {
-    std::lock_guard<std::mutex> lock(accumulator_mutex_);
-    accumulator_.SetHandledAndReply((*resolved_entry).original_message_id,
-                                    (*resolved_entry).source_node_id,
-                                    nfs::Reply(CommonErrors::success));
+  if (unresolved_entries.size() >= routing::Parameters::node_group_size -1U) {
+    for (const auto& entry : unresolved_entries) {
+      {
+        std::lock_guard<std::mutex> lock(accumulator_mutex_);
+        if (success)
+          accumulator_.SetHandledAndReply(entry.original_message_id,
+                                          entry.source_node_id,
+                                          nfs::Reply(CommonErrors::success));
+        else
+          accumulator_.SetHandledAndReply(entry.original_message_id,
+                                          entry.source_node_id,
+                                          nfs::Reply(VaultErrors::failed_to_handle_request));
+      }
+    }
   }
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_manager_service.cc
-void StructuredDataManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
-  auto record_names(structured_data_db_.GetKeys());
-  auto itr(std::begin(record_names));
-  while (itr != std::end(record_names)) {
-    auto data_name(itr->data_name());
-    auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), data_name));
-    auto check_holders_result(CheckHolders(matrix_change, routing_.kNodeId(),
-                                           NodeId(result.second)));
-    // Delete records for which this node is no longer responsible.
-    if (check_holders_result.proximity_status != routing::GroupRangeStatus::kInRange) {
-      structured_data_db_.Delete(*itr);
-      itr = record_names.erase(itr);
-      continue;
-    }
-=======
 void VersionManagerService::HandleChurnEvent(routing::MatrixChange /*matrix_change*/) {
 //  auto record_names(version_manager_db_.GetKeys());
 //  auto itr(std::begin(record_names));
@@ -296,19 +253,7 @@ void VersionManagerService::HandleChurnEvent(routing::MatrixChange /*matrix_chan
 //    //  }
 //    //}
 //}
->>>>>>> next:src/maidsafe/vault/version_manager/service.cc
 
-    // Replace old_node(s) in sync object and send TransferRecord to new node(s).
-    assert(check_holders_result.old_holders.size() == check_holders_result.new_holders.size());
-    for (auto i(0U); i != check_holders_result.old_holders.size(); ++i) {
-      sync_.ReplaceNode(*itr, check_holders_result.old_holders[i],
-                        check_holders_result.new_holders[i]);
-      nfs_.TransferRecord(data_name, check_holders_result.new_holders[i],
-                          GetSerialisedRecord(*itr));
-    }
-    ++itr;
-  }
-}
 
 }  // namespace vault
 

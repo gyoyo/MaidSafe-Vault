@@ -62,33 +62,14 @@ void VersionManagerMergePolicy::Merge(const UnresolvedEntry& unresolved_entry) {
   }
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_merge_policy.cc
-void StructuredDataMergePolicy::MergePut(const DbKey& db_key,
-=======
 void VersionManagerMergePolicy::MergePut(const DbKey& key,
->>>>>>> next:src/maidsafe/vault/version_manager/merge_policy.cc
                                          const StructuredDataVersions::VersionName& new_value,
                                          const StructuredDataVersions::VersionName& old_value) {
-  auto value(db_->Get(db_key));
+  auto value(db_->Get(key));
   value.Put(old_value, new_value);
-  db_->Put(std::make_pair(db_key, value));
+  db_->Put(std::make_pair(key, value));
 }
 
-<<<<<<< HEAD:src/maidsafe/vault/structured_data_manager/structured_data_merge_policy.cc
-void StructuredDataMergePolicy::MergeDeleteBranchUntilFork(
-    const DbKey& db_key,
-    const StructuredDataVersions::VersionName& tip_of_tree) {
-  auto value(db_->Get(db_key));
-  value.DeleteBranchUntilFork(tip_of_tree);
-  db_->Put(std::make_pair(db_key, value));
-}
-
-void StructuredDataMergePolicy::MergeDelete(const DbKey& db_key) {
-  db_->Delete(db_key);
-}
-
-void StructuredDataMergePolicy::MergeAccountTransfer(const DbKey& db_key,
-=======
 void VersionManagerMergePolicy::MergeDeleteBranchUntilFork(
     const DbKey& key,
     const StructuredDataVersions::VersionName& tot) {
@@ -102,9 +83,8 @@ void VersionManagerMergePolicy::MergeDelete(const DbKey& key) {
 }
 
 void VersionManagerMergePolicy::MergeAccountTransfer(const DbKey& key,
->>>>>>> next:src/maidsafe/vault/version_manager/merge_policy.cc
                                                      const StructuredDataVersions& data_version) {
-  db_->Put(std::make_pair(db_key, data_version));
+  db_->Put(std::make_pair(key, data_version));
 }
 
 }  // namespace vault

@@ -37,16 +37,9 @@ namespace vault {
 
 class MetadataMergePolicy {
  public:
-<<<<<<< HEAD:src/maidsafe/vault/metadata_manager/metadata_merge_policy.h
-  typedef MetadataUnresolvedEntry UnresolvedEntry;
-  typedef MetadataResolvedEntry ResolvedEntry;
-  typedef MetadataManager::DbKey DbKey;
-  typedef ManagerDb<MetadataManager> Database;
-=======
   typedef DataManagerUnresolvedEntry UnresolvedEntry;
   typedef DataManagerResolvedEntry ResolvedEntry;
   typedef ManagerDb<DataManager> Database;
->>>>>>> next:src/maidsafe/vault/data_manager/merge_policy.h
 
   explicit MetadataMergePolicy(ManagerDb<DataManager>* metadata_db);
   MetadataMergePolicy(MetadataMergePolicy&& other);
@@ -58,13 +51,8 @@ class MetadataMergePolicy {
 
   void Merge(const UnresolvedEntry& unresolved_entry);
 
-<<<<<<< HEAD:src/maidsafe/vault/metadata_manager/metadata_merge_policy.h
-  UnresolvedEntries unresolved_data_;
-  ManagerDb<MetadataManager>* metadata_db_;
-=======
   std::vector<UnresolvedEntry> unresolved_data_;
   ManagerDb<DataManager>* metadata_db_;
->>>>>>> next:src/maidsafe/vault/data_manager/merge_policy.h
 
  private:
   MetadataMergePolicy(const MetadataMergePolicy&);

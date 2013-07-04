@@ -76,32 +76,9 @@ class PmidManagerService {
   void HandleAccountTransfer(const nfs::Message& message);
 
   void ValidateMessage(const nfs::Message& message) const;
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account_holder_service.h
 
   template<typename Data, nfs::MessageAction action>
   void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
-=======
-  void InformOfDataHolderDown(const PmidName& pmid_name);
-  void InformOfDataHolderUp(const PmidName& pmid_name);
-  void InformAboutDataHolder(const PmidName& pmid_name, bool node_up);
-
-  bool StatusHasReverted(const PmidName& pmid_name, bool node_up) const;
-  void RevertMessages(const PmidName& pmid_name,
-                      const std::vector<boost::filesystem::path>::reverse_iterator& begin,
-                      std::vector<boost::filesystem::path>::reverse_iterator& current,
-                      bool node_up);
-  std::set<PmidName> GetDataNamesInFile(const PmidName& pmid_name,
-                                        const boost::filesystem::path& path) const;
-  void SendMessages(const PmidName& pmid_name,
-                    const std::set<PmidName>& data_manager_ids,
-                    bool node_up);
-
-  template<typename Data, nfs::MessageAction action>
-  void AddLocalUnresolvedEntryThenSync(const nfs::Message& message);
-  template<typename Data, nfs::MessageAction action>
-  void ReplyToDataManagers(const std::vector<PmidManagerResolvedEntry>& resolved_entries,
-                               const PmidName& pmid_name);
->>>>>>> next:src/maidsafe/vault/pmid_manager/service.h
 
   routing::Routing& routing_;
   std::mutex accumulator_mutex_;

@@ -78,13 +78,8 @@ MaidManagerUnresolvedEntry CreateUnresolvedEntry(const nfs::Message& message,
                                                  const NodeId& this_id) {
   static_assert(action == nfs::MessageAction::kPut || action == nfs::MessageAction::kDelete,
                 "Action must be either kPut of kDelete.");
-<<<<<<< HEAD:src/maidsafe/vault/maid_account_holder/maid_account_holder_service-inl.h
-  return MaidAccountUnresolvedEntry(
-      std::make_pair(DbKey(DataNameVariant(GetDataName<Data>(message))), action), cost, this_id);
-=======
   return MaidManagerUnresolvedEntry(
       std::make_pair(DataNameVariant(GetDataName<Data>(message)), action), cost, this_id);
->>>>>>> next:src/maidsafe/vault/maid_manager/service-inl.h
 }
 
 }  // namespace detail

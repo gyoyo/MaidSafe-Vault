@@ -83,6 +83,7 @@ class MaidAccount {
   NonEmptyString GetSyncData();
   void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
   void ReplaceNodeInSyncList(const NodeId& old_node, const NodeId& new_node);
+  void IncrementSyncAttempts();
 
   Status AllowPut(int32_t cost) const;
   // This offers the strong exception guarantee

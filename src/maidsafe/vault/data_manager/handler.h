@@ -106,6 +106,9 @@ class MetadataHandler {
   void ReplaceNodeInSyncList(const DataNameVariant& record_name,
                              const NodeId& old_node,
                              const NodeId& new_node);
+  template<typename Data>
+  void IncrementSyncAttempts(const typename Data::name_type& data_name);
+
 
   template<typename Data>
   friend class MetadataHandlerTypedTest;

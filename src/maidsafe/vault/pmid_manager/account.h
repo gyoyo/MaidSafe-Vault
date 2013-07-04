@@ -35,7 +35,6 @@ License.
 
 
 namespace maidsafe {
-
 namespace vault {
 
 class Db;
@@ -46,7 +45,7 @@ class PmidAccount {
   typedef PmidName name_type;
   typedef TaggedValue<NonEmptyString, struct SerialisedPmidAccountTag> serialised_type;
 
-  enum class DataHolderStatus : int32_t { kDown, kGoingDown, kUp, kGoingUp };
+  enum class PmidNodeStatus : int32_t { kDown, kGoingDown, kUp, kGoingUp };
 
   PmidAccount(const PmidName& pmid_name, Db &db, const NodeId &this_node_id);
   PmidAccount(const PmidName& pmid_name,
@@ -60,8 +59,8 @@ class PmidAccount {
 
   serialised_type Serialise();
 
-  void SetDataHolderUp() { pmid_node_status_ = DataHolderStatus::kUp; }
-  void SetDataHolderDown() { pmid_node_status_ = DataHolderStatus::kDown; }
+  void SetDataHolderUp() { pmid_node_status_ = PmidNodeStatus::kUp; }
+  void SetDataHolderDown() { pmid_node_status_ = PmidNodeStatus::kDown; }
 
   void PutData(int32_t size);
   template<typename Data>
@@ -72,26 +71,14 @@ class PmidAccount {
 
   void AddLocalUnresolvedEntry(const PmidManagerUnresolvedEntry& unresolved_entry);
   NonEmptyString GetSyncData();
-<<<<<<< HEAD:src/maidsafe/vault/pmid_account_holder/pmid_account.h
   void ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
   void ReplaceNodeInSyncList(const NodeId& old_node, const NodeId& new_node);
   void IncrementSyncAttempts();
 
   PmidRecord pmid_record() const;
   name_type name() const;
-  DataHolderStatus data_holder_status() const;
+  PmidNodeStatus pmid_node_status() const;
   int64_t total_data_stored_by_pmids() const;
-=======
-  std::vector<PmidManagerResolvedEntry> ApplySyncData(const NonEmptyString& serialised_unresolved_entries);
-  void ReplaceNodeInSyncList(const NodeId& old_node, const NodeId& new_node);
-  void IncrementSyncAttempts();
-
-  PmidRecord GetPmidRecord();
-
-  name_type name() const { return pmid_name_; }
-  DataHolderStatus pmid_node_status() const { return pmid_node_status_; }
-  int64_t total_data_stored_by_pmids() const { return pmid_record_.stored_total_size; }
->>>>>>> next:src/maidsafe/vault/pmid_manager/account.h
 
  private:
   PmidAccount(const PmidAccount&);
@@ -99,7 +86,7 @@ class PmidAccount {
 
   name_type pmid_name_;
   PmidRecord pmid_record_;
-  DataHolderStatus pmid_node_status_;
+  PmidNodeStatus pmid_node_status_;
   std::unique_ptr<AccountDb> account_db_;
   Sync<PmidManagerMergePolicy> sync_;
   uint16_t account_transfer_nodes_;
@@ -115,7 +102,6 @@ void PmidAccount::DeleteData(const typename Data::name_type& name) {
 
 
 }  // namespace vault
-
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_PMID_MANAGER_ACCOUNT_H_

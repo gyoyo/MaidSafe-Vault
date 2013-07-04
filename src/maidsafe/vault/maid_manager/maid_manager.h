@@ -21,26 +21,15 @@ License.
 
 #include "maidsafe/common/types.h"
 #include "maidsafe/nfs/types.h"
-<<<<<<< HEAD:src/maidsafe/vault/maid_account_holder/maid_account_holder.h
-#include "maidsafe/vault/db_key.h"
-=======
 #include "maidsafe/vault/unresolved_element.h"
-
->>>>>>> next:src/maidsafe/vault/maid_manager/maid_manager.h
 
 namespace maidsafe {
 
 namespace nfs {
 
 template<>
-<<<<<<< HEAD:src/maidsafe/vault/maid_account_holder/maid_account_holder.h
-struct PersonaTypes<Persona::kMaidAccountHolder> {
-  // typedef DataNameVariant DbKey;
-  typedef vault::DbKey DbKey;
-=======
 struct PersonaTypes<Persona::kMaidManager> {
   typedef DataNameVariant DbKey;
->>>>>>> next:src/maidsafe/vault/maid_manager/maid_manager.h
   typedef int32_t DbValue;
   typedef std::pair<DbKey, MessageAction> UnresolvedEntryKey;
   typedef DbValue UnresolvedEntryValue;

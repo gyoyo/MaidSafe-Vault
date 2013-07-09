@@ -56,14 +56,14 @@ void PmidManagerService::HandleMessage(const nfs::Message& message,
   nfs::Reply reply(CommonErrors::success);
   nfs::MessageAction action(message.data().action);
   switch (action) {
-    case nfs::MessageAction::kCreatePmidAccount:
-      return CreatePmidAccount(message);
-    case nfs::MessageAction::kGetPmidTotals:
-      return GetPmidTotals(message);
     case nfs::MessageAction::kSynchronise:
       return HandleSync(message);
     case nfs::MessageAction::kAccountTransfer:
       return HandleAccountTransfer(message);
+    case nfs::MessageAction::kGetPmidTotals:
+      return GetPmidTotals(message);
+    case nfs::MessageAction::kGetPmidAccount:
+      return GetPmidAccount(message);
     default:
       LOG(kError) << "Unhandled Post action type";
   }
@@ -87,7 +87,36 @@ void PmidManagerService::GetPmidTotals(const nfs::Message& message) {
     if (!pmid_record.pmid_name.data.string().empty()) {
       nfs::Reply reply(CommonErrors::success, pmid_record.Serialise());
       nfs_.ReturnPmidTotals(message.source().node_id, reply.Serialise());
+    } else {
+      nfs_.ReturnFailure(message);
     }
+  }
+  catch(const maidsafe_error& error) {
+    LOG(kWarning) << error.what();
+  }
+  catch(...) {
+    LOG(kWarning) << "Unknown error.";
+  }
+}
+
+void PmidManagerService::GetPmidAccount(const nfs::Message& message) {
+  try {
+    PmidName pmid_name(detail::GetPmidAccountName(message));
+    protobuf::PmidAccountResponse pmid_account_response;
+    protobuf::PmidAccount pmid_account;
+    PmidAccount::serialised_type serialised_account_details;
+    pmid_account.set_pmid_name(pmid_name.data.string());
+    try {
+      serialised_account_details = pmid_account_handler_.GetSerialisedAccount(pmid_name, false);
+      pmid_account.set_serialised_account_details(serialised_account_details.data.string());
+      pmid_account_response.set_status(true);
+    }
+    catch(const maidsafe_error&) {
+      pmid_account_response.set_status(false);
+    }
+    pmid_account_response.mutable_pmid_account()->CopyFrom(pmid_account);
+    nfs_.AccountTransfer<passport::Pmid>(
+          pmid_name, NonEmptyString(pmid_account_response.SerializeAsString()));
   }
   catch(const maidsafe_error& error) {
     LOG(kWarning) << error.what();
@@ -136,7 +165,7 @@ void PmidManagerService::ValidateGenericSender(const nfs::Message& message) cons
       || routing_.EstimateInGroup(message.source().node_id, NodeId(message.data().name)))
     ThrowError(VaultErrors::permission_denied);
 
-  if (!FromDataManager(message) || !detail::ForThisPersona(message))
+  if (!FromDataManager(message) || !FromPmidNode(message) || !detail::ForThisPersona(message))
     ThrowError(CommonErrors::invalid_parameter);
 }
 
@@ -168,12 +197,11 @@ void PmidManagerService::HandleSync(const nfs::Message& message) {
 
 // =============== Account transfer ===============================================================
 
-void PmidManagerService::TransferAccount(const PmidName& account_name,
-                                               const NodeId& new_node) {
+void PmidManagerService::TransferAccount(const PmidName& account_name, const NodeId& new_node) {
   protobuf::PmidAccount pmid_account;
   pmid_account.set_pmid_name(account_name.data.string());
   PmidAccount::serialised_type
-    serialised_account_details(pmid_account_handler_.GetSerialisedAccount(account_name));
+    serialised_account_details(pmid_account_handler_.GetSerialisedAccount(account_name, true));
   pmid_account.set_serialised_account_details(serialised_account_details.data.string());
   nfs_.TransferAccount(new_node, NonEmptyString(pmid_account.SerializeAsString()));
 }
@@ -191,8 +219,6 @@ void PmidManagerService::HandleAccountTransfer(const nfs::Message& message) {
   if (finished_all_transfers)
     return;    // TODO(Team) Implement whatever else is required here?
 }
-
-// =============== DataHolder =====================================================================
 
 }  // namespace vault
 }  // namespace maidsafe

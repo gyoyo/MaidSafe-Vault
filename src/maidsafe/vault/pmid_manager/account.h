@@ -57,10 +57,10 @@ class PmidAccount {
   PmidAccount(PmidAccount&& other);
   PmidAccount& operator=(PmidAccount&& other);
 
-  serialised_type Serialise();
+  serialised_type Serialise(bool include_pmid_record);
 
-  void SetDataHolderUp() { pmid_node_status_ = PmidNodeStatus::kUp; }
-  void SetDataHolderDown() { pmid_node_status_ = PmidNodeStatus::kDown; }
+  void SetPmidNodeUp() { pmid_node_status_ = PmidNodeStatus::kUp; }
+  void SetPmidNodeDown() { pmid_node_status_ = PmidNodeStatus::kDown; }
 
   void PutData(int32_t size);
   template<typename Data>

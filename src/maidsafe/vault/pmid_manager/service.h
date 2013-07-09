@@ -56,6 +56,7 @@ class PmidManagerService {
 
   void CreatePmidAccount(const nfs::Message& message);
   void GetPmidTotals(const nfs::Message& message);
+  void GetPmidAccount(const nfs::Message& message);
 
   // =============== Put/Delete data ================================================================
   template<typename Data>

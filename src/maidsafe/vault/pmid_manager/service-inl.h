@@ -93,11 +93,16 @@ void PmidManagerService::HandlePut(const nfs::Message& message) {
 template<typename Data>
 void PmidManagerService::HandleDelete(const nfs::Message& message,
                                       const routing::ReplyFunctor& /*reply_functor*/) {
-//  SendReplyAndAddToAccumulator(message, reply_functor, nfs::Reply(CommonErrors::success));
   try {
     auto account_name(detail::GetPmidAccountName(message));
     typename Data::name_type data_name(message.data().name);
-    pmid_account_handler_.Delete<Data>(account_name, data_name);
+    try  {
+      pmid_account_handler_.Delete<Data>(account_name, data_name);
+    }
+    catch(const maidsafe_error&) {
+      AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kDelete>(message);
+      return;
+    }
     AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kDelete>(message);
     nfs_.Delete<Data>(message.pmid_node(), data_name, [](std::string) {});
   }
@@ -114,6 +119,7 @@ void PmidManagerService::HandlePutCallback(const std::string& serialised_reply,
                                            const nfs::Message& message) {
   nfs::Reply reply((nfs::Reply::serialised_type(NonEmptyString(serialised_reply))));
   if (reply.IsSuccess()) {
+    pmid_account_handler_.CreateAccount(PmidName(detail::GetPmidAccountName(message)));
     AddLocalUnresolvedEntryThenSync<Data, nfs::MessageAction::kPut>(message);
     SendPutResult<Data>(message, true);
   } else {

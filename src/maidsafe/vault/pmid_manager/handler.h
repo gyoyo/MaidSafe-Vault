@@ -45,11 +45,10 @@ class PmidAccountHandler {
                             const PmidAccount::serialised_type& serialised_pmid_account_details);
   void AddAccount(std::unique_ptr<PmidAccount> pmid_account);
   void DeleteAccount(const PmidName& account_name);
-  PmidAccount::PmidNodeStatus AccountStatus(const PmidName& account_name) const;
-  void SetDataHolderGoingDown(const PmidName& account_name);
-  void SetDataHolderDown(const PmidName& account_name);
-  void SetDataHolderGoingUp(const PmidName& account_name);
-  void SetDataHolderUp(const PmidName& account_name);
+  PmidAccount::PmidNodeStatus PmidNodeStatus(const PmidName& account_name) const;
+
+  void SetPmidNodeDown(const PmidName& account_name);
+  void SetPmidNodeUp(const PmidName& account_name);
 
   void AddLocalUnresolvedEntry(const PmidName& account_name,
                                const PmidManagerUnresolvedEntry& unresolved_entry);
@@ -57,7 +56,8 @@ class PmidAccountHandler {
 
   // Sync operations
   std::vector<PmidName> GetAccountNames() const;
-  PmidAccount::serialised_type GetSerialisedAccount(const PmidName& account_name) const;
+  PmidAccount::serialised_type GetSerialisedAccount(const PmidName& account_name,
+                                                    bool include_pmid_record) const;
   NonEmptyString GetSyncData(const PmidName& account_name);
   void ApplySyncData(const PmidName& account_name,
                      const NonEmptyString& serialised_unresolved_entries);

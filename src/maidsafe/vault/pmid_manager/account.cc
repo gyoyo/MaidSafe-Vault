@@ -78,14 +78,16 @@ PmidAccount& PmidAccount::operator=(PmidAccount&& other) {
   return *this;
 }
 
-PmidAccount::serialised_type PmidAccount::Serialise() {
+PmidAccount::serialised_type PmidAccount::Serialise(bool include_pmid_record) {
   protobuf::PmidRecord proto_pmid_record;
-  proto_pmid_record.set_pmid_name(pmid_record_.pmid_name.data.string());
-  proto_pmid_record.set_stored_count(pmid_record_.stored_count);
-  proto_pmid_record.set_stored_total_size(pmid_record_.stored_total_size);
-  proto_pmid_record.set_lost_count(pmid_record_.lost_count);
-  proto_pmid_record.set_lost_total_size(pmid_record_.lost_total_size);
-  proto_pmid_record.set_claimed_available_size(pmid_record_.claimed_available_size);
+  if (include_pmid_record) {
+    proto_pmid_record.set_pmid_name(pmid_record_.pmid_name.data.string());
+    proto_pmid_record.set_stored_count(pmid_record_.stored_count);
+    proto_pmid_record.set_stored_total_size(pmid_record_.stored_total_size);
+    proto_pmid_record.set_lost_count(pmid_record_.lost_count);
+    proto_pmid_record.set_lost_total_size(pmid_record_.lost_total_size);
+    proto_pmid_record.set_claimed_available_size(pmid_record_.claimed_available_size);
+  }
 
   protobuf::PmidAccountDetails proto_pmid_account_details;
 

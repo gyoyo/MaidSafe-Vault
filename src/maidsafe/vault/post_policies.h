@@ -171,6 +171,22 @@ class PmidManagerMiscellaneousPolicy {
     routing_.SendGroup(NodeId(data_name), message_wrapper.Serialise()->string(), false, nullptr);
   }
 
+  void ReturnFailure(const nfs::Message& message) {
+    nfs::MessageWrapper message_wrapper(message.Serialise());
+    nfs::Reply(CommonErrors::unable_to_handle_request, message.Serialise());
+    NodeId target_node_id(message.source().node_id);
+    routing_.SendDirect(target_node_id, message_wrapper.Serialise()->string(), false, nullptr);
+  }
+
+  template<typename Data>
+  void AccountTransfer(const typename Data::name_type& data_name,
+                       const NonEmptyString& serialised_account) {
+    nfs::Message::Data data(data_name, serialised_account, nfs::MessageAction::kAccountTransfer);
+    nfs::Message message(nfs::Persona::kPmidNode, kSource_, data, kPmid_.name());
+    nfs::MessageWrapper message_wrapper(message.Serialise());
+    routing_.SendDirect(NodeId(data_name), message_wrapper.Serialise()->string(), false, nullptr);
+  }
+
  private:
   routing::Routing& routing_;
   const nfs::PersonaId kSource_;

@@ -47,7 +47,7 @@ inline bool FromPmidManager(const Message& message) {
 }
 
 template<typename Message>
-inline bool FromDataHolder(const Message& message) {
+inline bool FromPmidNode(const Message& message) {
   return message.source().persona == nfs::Persona::kPmidNode;
 }
 

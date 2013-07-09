@@ -290,7 +290,6 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
       DbKey key(GetRandomKey());
       NonEmptyString value(GenerateKeyValueData(key, kValueSize));
       account_vector[i].push_back(std::make_pair(key, value));
-      //async_ops.push_back(std::async(
       std::async(
           std::launch::async,
           [this, &account_db_vector, &account_vector, &op_count, &op_mutex, i, j] {
@@ -301,7 +300,6 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
                 ++op_count;
               }
           });
-          // }));
     }
   }
   {
@@ -311,15 +309,11 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
                                     return op_count == expected_count;
                                   }));
     EXPECT_TRUE(result);
-    /*for (uint32_t i = 0; i != async_ops.size(); ++i)
-      EXPECT_NO_THROW(async_ops[i].get());
-    async_ops.clear();*/
     op_count = 0;
   }
 
   for (uint32_t i = 0; i != accounts; ++i) {
     for (uint32_t j = 0; j != account_vector[i].size(); ++j) {
-      //async_ops.push_back(std::async(
       std::async(
           std::launch::async,
           [this, &account_db_vector, &account_vector, &op_count, &op_mutex, i, j] {
@@ -330,7 +324,6 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
                 ++op_count;
               }
           });
-          //}));
     }
   }
   {
@@ -340,9 +333,6 @@ TEST_F(DbTest, BEH_AsyncGetPuts) {
                                     return op_count == expected_count;
                                   }));
     EXPECT_TRUE(result);
-    /*for (uint32_t i = 0; i != async_ops.size(); ++i)
-      EXPECT_NO_THROW(async_ops[i].get());
-    async_ops.clear();*/
   }
 }
 

@@ -113,6 +113,7 @@ void PmidManagerService::GetPmidAccount(const nfs::Message& message) {
     }
     catch(const maidsafe_error&) {
       pmid_account_response.set_status(false);
+      pmid_account_handler_.CreateAccount(PmidName(detail::GetPmidAccountName(message)));
     }
     pmid_account_response.mutable_pmid_account()->CopyFrom(pmid_account);
     nfs_.AccountTransfer<passport::Pmid>(

@@ -37,7 +37,7 @@ namespace maidsafe {
 
 namespace vault {
 
-struct PmidRecord;
+struct PmidManagerMetadata;
 
 namespace test { class MaidManagerHandlerTest; }
 
@@ -48,7 +48,8 @@ class MaidAccountHandler {
 
   // Account operations
   // Returns true when final account transfer has been completed.
-  bool ApplyAccountTransfer(const MaidName& account_name, const NodeId& source_id,
+  bool ApplyAccountTransfer(const MaidName& account_name,
+                            const NodeId& source_id,
                             const MaidAccount::serialised_type& serialised_maid_account_details);
   // client request or going out of range
   void DeleteAccount(const MaidName& account_name);
@@ -56,15 +57,16 @@ class MaidAccountHandler {
   void RegisterPmid(const MaidName& account_name, const nfs::PmidRegistration& pmid_registration);
   void UnregisterPmid(const MaidName& account_name, const PmidName& pmid_name);
   std::vector<PmidName> GetPmidNames(const MaidName& account_name) const;
-  void UpdatePmidTotals(const MaidName& account_name, const PmidRecord& pmid_totals);
-  void AddLocalUnresolvedEntry(const MaidName& account_name,
-                               const MaidManagerUnresolvedEntry& unresolved_entry);
+  void UpdatePmidTotals(const MaidName& account_name, const PmidManagerMetadata& pmid_totals);
+  void AddLocalUnresolvedAction(const MaidName& account_name,
+                               const MaidManagerUnresolvedAction& unresolved_action);
+
   // Sync operations
   std::vector<MaidName> GetAccountNames() const;
   MaidAccount::serialised_type GetSerialisedAccount(const MaidName& account_name) const;
   NonEmptyString GetSyncData(const MaidName& account_name);
   void ApplySyncData(const MaidName& account_name,
-                     const NonEmptyString& serialised_unresolved_entries);
+                     const NonEmptyString& serialised_unresolved_actions);
   void ReplaceNodeInSyncList(const MaidName& account_name,
                              const NodeId& old_node,
                              const NodeId& new_node);

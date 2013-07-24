@@ -15,6 +15,8 @@ License.
 
 #include "maidsafe/vault/db.h"
 
+#include "boost/filesystem/operations.hpp"
+
 #include "leveldb/status.h"
 
 #include "maidsafe/vault/utils.h"
@@ -26,10 +28,10 @@ namespace vault {
 
 const int Db::kPrefixWidth_(2);
 
-Db::Db(const boost::filesystem::path& path)
-    : kDbPath_(path),
+Db::Db()
+    : kDbPath_(boost::filesystem::unique_path()),
       mutex_(),
-      leveldb_(InitialiseLevelDb(path)),
+      leveldb_(InitialiseLevelDb(kDbPath_)),
       account_ids_() {}
 
 Db::~Db() {

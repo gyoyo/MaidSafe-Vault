@@ -16,15 +16,15 @@ License.
 package maidsafe.vault.protobuf;
 import "maidsafe/vault/pmid_manager/pmid_manager.proto";
 
-message MaidManagerDbValue {
-  required int32 average_cost = 1;
+message MaidManagerValue {
+  required int64 total_cost = 1;
   required int32 count = 2;
 }
 
 message MaidManagerDbEntry {
   required uint32 type = 1;  // name and type == db key
   required bytes name = 2;
-  required MaidManagerDbValue value = 3;
+  required MaidManagerValue value = 3;
 }
 
 message MaidManager {
@@ -36,6 +36,15 @@ message MaidManagerDetails {
   repeated bytes serialised_pmid_registration = 1;
   repeated MaidManagerDbEntry db_entry = 2;
   repeated bytes serialised_unresolved_entry = 3;
+}
+
+message MaidManagerMetadata {
+  message PmidTotal {
+    required PmidManagerMetadata pmid_metadata = 1;
+    required bytes serialised_pmid_registration = 2;
+  }
+  repeated PmidTotal pmid_totals = 1;
+  required int32 total_put_data = 2;
 }
 
 // Used as data field in MM's Reply to Put request.

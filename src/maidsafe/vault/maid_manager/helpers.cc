@@ -43,7 +43,7 @@ PmidTotals::PmidTotals(
 
 PmidTotals::PmidTotals(
     const nfs::PmidRegistration::serialised_type& serialised_pmid_registration_in,
-    const PmidRecord& pmid_record_in)
+    const PmidManagerMetadata& pmid_record_in)
         : serialised_pmid_registration(serialised_pmid_registration_in),
           pmid_record(pmid_record_in) {}
 
@@ -60,6 +60,12 @@ PmidTotals& PmidTotals::operator=(PmidTotals other) {
   swap(serialised_pmid_registration, other.serialised_pmid_registration);
   swap(pmid_record, other.pmid_record);
   return *this;
+}
+
+
+bool operator==(const PmidTotals& lhs, const PmidTotals& rhs) {
+  return (lhs.pmid_record == rhs.pmid_record) &&
+          (lhs.serialised_pmid_registration == rhs.serialised_pmid_registration);
 }
 
 }  // namespace vault

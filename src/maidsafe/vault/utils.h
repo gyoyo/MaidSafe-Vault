@@ -71,23 +71,8 @@ bool AddResult(const nfs::Message& message,
                std::mutex& accumulator_mutex,
                int requests_required);
 
-template<int width>
-std::string ToFixedWidthString(uint32_t number);
-
-template<int width>
-uint32_t FromFixedWidthString(const std::string& number_as_string);
-
 }  // namespace detail
 
-struct CheckHoldersResult {
-  std::vector<NodeId> new_holders;
-  std::vector<NodeId> old_holders;
-  routing::GroupRangeStatus proximity_status;
-};
-
-CheckHoldersResult CheckHolders(const routing::MatrixChange& matrix_change,
-                                const NodeId& this_id,
-                                const NodeId& target);
 
 template<typename Message>
 inline bool FromMaidManager(const Message& message);
@@ -122,28 +107,12 @@ inline bool FromDataGetter(const Message& message);
 template<typename Message>
 inline bool FromVersionManager(const nfs::Message& message);
 
-
 template<typename Persona>
 typename Persona::DbKey GetKeyFromMessage(const nfs::Message& message) {
   if (!message.data().type)
     ThrowError(CommonErrors::parsing_error);
   return GetDataNameVariant(*message.data().type, message.data().name);
 }
-
-template<>
-typename VersionManager::DbKey
-         GetKeyFromMessage<VersionManager>(const nfs::Message& message);
-
-template<typename PersonaTypes>
-typename PersonaTypes::RecordName GetRecordName(const typename PersonaTypes::DbKey& db_key);
-
-template<>
-typename DataManager::RecordName GetRecordName<DataManager>(
-    const typename DataManager::DbKey& db_key);
-
-template<>
-typename VersionManager::RecordName GetRecordName<VersionManager>(
-    const typename VersionManager::DbKey& db_key);
 
 std::unique_ptr<leveldb::DB> InitialiseLevelDb(const boost::filesystem::path& db_path);
 

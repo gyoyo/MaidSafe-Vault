@@ -18,6 +18,9 @@ License.
 #include <string>
 
 #include "maidsafe/nfs/pmid_registration.h"
+#include "maidsafe/data_types/owner_directory.h"
+#include "maidsafe/data_types/group_directory.h"
+#include "maidsafe/data_types/world_directory.h"
 
 #include "maidsafe/vault/maid_manager/helpers.h"
 #include "maidsafe/vault/maid_manager/maid_manager.pb.h"
@@ -45,7 +48,7 @@ int32_t EstimateCost<passport::PublicPmid>(const passport::PublicPmid&) {
   return 0;
 }
 
-MaidName GetMaidManagerName(const nfs::Message& message) {
+MaidName GetMaidAccountName(const nfs::Message& message) {
   return MaidName(Identity(message.source().node_id.string()));
 }
 
@@ -96,12 +99,12 @@ T Merge(std::vector<T> values) {
   return total / count;
 }
 
-PmidRecord MergePmidTotals(std::shared_ptr<GetPmidTotalsOp> op_data) {
+PmidManagerMetadata MergePmidTotals(std::shared_ptr<GetPmidTotalsOp> op_data) {
   // Remove invalid results
   op_data->pmid_records.erase(
       std::remove_if(std::begin(op_data->pmid_records),
                      std::end(op_data->pmid_records),
-                     [&op_data](const PmidRecord& pmid_record) {
+                     [&op_data](const PmidManagerMetadata& pmid_record) {
                          return pmid_record.pmid_name->IsInitialised() &&
                                 pmid_record.pmid_name == op_data->kPmidAccountName;
                      }),
@@ -117,7 +120,7 @@ PmidRecord MergePmidTotals(std::shared_ptr<GetPmidTotalsOp> op_data) {
     all_claimed_available_size.push_back(pmid_record.claimed_available_size);
   }
 
-  PmidRecord merged(op_data->kPmidAccountName);
+  PmidManagerMetadata merged(op_data->kPmidAccountName);
   merged.stored_count = Merge(all_stored_counts);
   merged.stored_total_size = Merge(all_stored_total_size);
   merged.lost_count = Merge(all_lost_count);
@@ -205,6 +208,23 @@ void MaidManagerService::SendReplyAndAddToAccumulator(
   accumulator_.SetHandled(message, reply);
 }
 
+template<>
+void MaidManagerService::HandlePut<OwnerDirectory>(const nfs::Message& message,
+                                                   const routing::ReplyFunctor& reply_functor) {
+  return HandleVersionMessage<OwnerDirectory>(message, reply_functor);
+}
+
+template<>
+void MaidManagerService::HandlePut<GroupDirectory>(const nfs::Message& message,
+                                                   const routing::ReplyFunctor& reply_functor) {
+  return HandleVersionMessage<GroupDirectory>(message, reply_functor);
+}
+
+template<>
+void MaidManagerService::HandlePut<WorldDirectory>(const nfs::Message& message,
+                                                   const routing::ReplyFunctor& reply_functor) {
+  return HandleVersionMessage<WorldDirectory>(message, reply_functor);
+}
 
 // =============== Pmid registration ===============================================================
 
@@ -278,14 +298,14 @@ void MaidManagerService::FinalisePmidRegistration(
 
 // =============== Sync ============================================================================
 
-void MaidManagerService::Sync(const MaidName& account_name) {
+void MaidManagerService::DoSync(const MaidName& account_name) {
   auto serialised_sync_data(maid_account_handler_.GetSyncData(account_name));
   if (!serialised_sync_data.IsInitialised())  // Nothing to sync
     return;
 
   protobuf::Sync proto_sync;
   proto_sync.set_account_name(account_name->string());
-  proto_sync.set_serialised_unresolved_entries(serialised_sync_data.string());
+  proto_sync.set_serialised_unresolved_actions(serialised_sync_data.string());
 
   nfs_.Sync(account_name, NonEmptyString(proto_sync.SerializeAsString()));
 }
@@ -297,7 +317,7 @@ void MaidManagerService::HandleSync(const nfs::Message& message) {
     return;
   }
   maid_account_handler_.ApplySyncData(MaidName(Identity(proto_sync.account_name())),
-                                      NonEmptyString(proto_sync.serialised_unresolved_entries()));
+                                      NonEmptyString(proto_sync.serialised_unresolved_actions()));
 }
 
 
@@ -342,11 +362,11 @@ void MaidManagerService::UpdatePmidTotals(const MaidName& account_name) {
 
 void MaidManagerService::UpdatePmidTotalsCallback(const std::string& serialised_reply,
                                                         std::shared_ptr<GetPmidTotalsOp> op_data) {
-  PmidRecord pmid_record;
+  PmidManagerMetadata pmid_record;
   try {
     nfs::Reply reply((nfs::Reply::serialised_type(NonEmptyString(serialised_reply))));
     if (reply.IsSuccess())
-      pmid_record = PmidRecord(PmidRecord::serialised_type(reply.data()));
+      pmid_record = PmidManagerMetadata(PmidManagerMetadata::serialised_type(reply.data()));
   }
   catch(const std::exception& e) {
     LOG(kWarning) << "Error updating PMID totals: " << e.what();
@@ -367,12 +387,11 @@ void MaidManagerService::UpdatePmidTotalsCallback(const std::string& serialised_
   }
 }
 
-void MaidManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
+void MaidManagerService::HandleChurnEvent(std::shared_ptr<routing::MatrixChange> matrix_change) {
   auto account_names(maid_account_handler_.GetAccountNames());
   auto itr(std::begin(account_names));
   while (itr != std::end(account_names)) {
-    auto check_holders_result(CheckHolders(matrix_change, routing_.kNodeId(),
-                                           NodeId((*itr)->string())));
+    auto check_holders_result(matrix_change->CheckHolders(NodeId((*itr)->string())));
     // Delete accounts for which this node is no longer responsible.
     if (check_holders_result.proximity_status != routing::GroupRangeStatus::kInRange) {
       maid_account_handler_.DeleteAccount(*itr);

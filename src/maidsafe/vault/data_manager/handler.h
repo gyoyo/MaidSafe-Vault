@@ -49,7 +49,7 @@ class MetadataHandler {
  public:
   typedef TaggedValue<NonEmptyString, struct SerialisedMetadataValueTag>
     serialised_record_type;
-  MetadataHandler(const boost::filesystem::path& vault_root_dir, const NodeId& this_node_id);
+  MetadataHandler(const NodeId& this_node_id);
 
   // This increments the subscribers count, or adds a new element if it doesn't exist.
   template<typename Data>
@@ -96,7 +96,7 @@ class MetadataHandler {
   void AddLocalUnresolvedEntry(const DataManagerUnresolvedEntry& unresolved_entry);
 
   // Sync operations
-  std::vector<DataManager::RecordName> GetRecordNames() const;
+  std::vector<DataManagerKey> GetRecordNames() const;
   serialised_record_type GetSerialisedRecord(const DataNameVariant& data_name);
   template <typename Data>
   NonEmptyString GetSyncData(const typename Data::name_type& data_name);
@@ -115,7 +115,7 @@ class MetadataHandler {
 
  private:
   const boost::filesystem::path kMetadataRoot_;
-  std::unique_ptr<ManagerDb<DataManager>> metadata_db_;
+  std::unique_ptr<ManagerDb<DataManagerKey, DataManagerValue>> metadata_db_;
   const NodeId kThisNodeId_;
   mutable std::mutex mutex_;
   Sync<MetadataMergePolicy> sync_;

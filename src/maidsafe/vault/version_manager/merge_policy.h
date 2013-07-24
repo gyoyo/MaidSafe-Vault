@@ -41,10 +41,9 @@ class VersionManagerMergePolicy {
  public:
   typedef VersionManagerUnresolvedEntry UnresolvedEntry;
   typedef VersionManagerResolvedEntry ResolvedEntry;
-  typedef VersionManager::DbKey DbKey;
-  typedef ManagerDb<VersionManager> Database;
+  typedef ManagerDb<VersionManagerKey, StructuredDataVersions> Database;
 
-  explicit VersionManagerMergePolicy(ManagerDb<VersionManager>* db);
+  explicit VersionManagerMergePolicy(ManagerDb<VersionManagerKey, StructuredDataVersions>* db);
   VersionManagerMergePolicy(VersionManagerMergePolicy&& other);
   VersionManagerMergePolicy& operator=(VersionManagerMergePolicy&& other);
 
@@ -55,21 +54,22 @@ class VersionManagerMergePolicy {
   void Merge(const UnresolvedEntry& unresolved_entry);
 
   std::vector<UnresolvedEntry> unresolved_data_;
-  ManagerDb<VersionManager>* db_;
+  ManagerDb<VersionManagerKey, StructuredDataVersions>* db_;
 
  private:
   VersionManagerMergePolicy(const VersionManagerMergePolicy&);
   VersionManagerMergePolicy& operator=(const VersionManagerMergePolicy&);
 
-  void MergePut(const DbKey& db_key,
+  void MergePut(const VersionManagerKey& key,
                 const StructuredDataVersions::VersionName& new_value,
                 const StructuredDataVersions::VersionName& old_value);
 
-  void MergeDeleteBranchUntilFork(const DbKey& db_key,
-                                  const StructuredDataVersions::VersionName& tip_of_tree);
-  void MergeDelete(const DbKey& db_key);
+  void MergeDeleteBranchUntilFork(const VersionManagerKey& key,
+                                  const StructuredDataVersions::VersionName& tot);
+  void MergeDelete(const VersionManagerKey& key);
 
-  void MergeAccountTransfer(const DbKey& db_key, const StructuredDataVersions& data_version);
+  void MergeAccountTransfer(const VersionManagerKey& key,
+                            const StructuredDataVersions& data_version);
 };
 
 

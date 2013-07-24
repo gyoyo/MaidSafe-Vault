@@ -16,24 +16,37 @@ License.
 #ifndef MAIDSAFE_VAULT_MAID_MANAGER_MAID_MANAGER_H_
 #define MAIDSAFE_VAULT_MAID_MANAGER_MAID_MANAGER_H_
 
-#include <cstdint>
-#include <utility>
-
-#include "maidsafe/common/types.h"
 #include "maidsafe/nfs/types.h"
-#include "maidsafe/vault/unresolved_element.h"
+#include "maidsafe/passport/types.h"
+
+#include "maidsafe/vault/group_key.h"
+#include "maidsafe/vault/unresolved_action.h"
+#include "maidsafe/vault/maid_manager/value.h"
 
 namespace maidsafe {
+
+namespace vault {
+
+struct ActionMaidManagerPut;
+struct ActionMaidManagerDelete;
+template<bool Unregister>
+struct ActionRegisterUnregisterPmid;
+typedef ActionRegisterUnregisterPmid<false> ActionRegisterPmid;
+typedef ActionRegisterUnregisterPmid<true> ActionUnregisterPmid;
+
+}  // namespace vault
 
 namespace nfs {
 
 template<>
 struct PersonaTypes<Persona::kMaidManager> {
-  typedef DataNameVariant DbKey;
-  typedef int32_t DbValue;
-  typedef std::pair<DbKey, MessageAction> UnresolvedEntryKey;
-  typedef DbValue UnresolvedEntryValue;
   static const Persona persona = Persona::kMaidManager;
+  typedef vault::GroupKey<passport::PublicMaid::name_type> Key;
+  typedef vault::MaidManagerValue Value;
+  typedef vault::UnresolvedAction<Key, vault::ActionMaidManagerPut> UnresolvedPut;
+  typedef vault::UnresolvedAction<Key, vault::ActionMaidManagerDelete> UnresolvedDelete;
+  typedef vault::UnresolvedAction<Key, vault::ActionRegisterPmid> UnresolvedRegisterPmid;
+  typedef vault::UnresolvedAction<Key, vault::ActionUnregisterPmid> UnresolvedUnregisterPmid;
 };
 
 }  // namespace nfs
@@ -42,8 +55,6 @@ struct PersonaTypes<Persona::kMaidManager> {
 namespace vault {
 
 typedef nfs::PersonaTypes<nfs::Persona::kMaidManager> MaidManager;
-typedef UnresolvedElement<MaidManager> MaidManagerUnresolvedEntry;
-typedef MaidManagerUnresolvedEntry MaidManagerResolvedEntry;
 
 }  // namespace vault
 

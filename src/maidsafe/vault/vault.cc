@@ -33,12 +33,12 @@ Vault::Vault(const passport::Pmid& pmid,
       network_health_condition_variable_(),
       network_health_(-1),
       on_new_bootstrap_endpoint_(on_new_bootstrap_endpoint),
-      db_(vault_root_dir),
+      db_(),
       routing_(new routing::Routing(pmid)),
       public_key_getter_(*routing_, pmids_from_file),
       maid_manager_service_(pmid, *routing_, public_key_getter_, db_),
-      version_manager_service_(pmid, *routing_, vault_root_dir),
-      data_manager_service_(pmid, *routing_, public_key_getter_, vault_root_dir),
+      version_manager_service_(pmid, *routing_),
+      data_manager_service_(pmid, *routing_, public_key_getter_),
       pmid_manager_service_(pmid, *routing_, db_),
       pmid_node_(pmid, *routing_, vault_root_dir),
       demux_(maid_manager_service_,
@@ -90,7 +90,7 @@ routing::Functors Vault::InitialiseRoutingCallbacks() {
   functors.close_node_replaced = [this] (const std::vector<routing::NodeInfo>& new_close_nodes) {
                                    OnCloseNodeReplaced(new_close_nodes);
                                  };
-  functors.matrix_changed = [this] (const routing::MatrixChange& matrix_change) {
+  functors.matrix_changed = [this] (std::shared_ptr<routing::MatrixChange> matrix_change) {
                               OnMatrixChanged(matrix_change);
                             };
   functors.request_public_key = [this] (const NodeId& node_id,
@@ -163,7 +163,7 @@ void Vault::DoOnPublicKeyRequested(const NodeId& node_id,
 void Vault::OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& /*new_close_nodes*/) {
 }
 
-void Vault::OnMatrixChanged(const routing::MatrixChange& matrix_change) {
+void Vault::OnMatrixChanged(std::shared_ptr<routing::MatrixChange> matrix_change) {
   asio_service_.service().post([=] {
       maid_manager_service_.HandleChurnEvent(matrix_change);
   });

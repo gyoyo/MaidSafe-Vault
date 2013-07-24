@@ -18,6 +18,7 @@ License.
 #include "maidsafe/common/error.h"
 
 #include "maidsafe/vault/pmid_manager/pmid_manager.pb.h"
+#include "maidsafe/vault/pmid_manager/metadata.h"
 #include "maidsafe/vault/sync.pb.h"
 
 namespace fs = boost::filesystem;
@@ -83,9 +84,9 @@ void PmidManagerService::CreatePmidAccount(const nfs::Message& message) {
 
 void PmidManagerService::GetPmidTotals(const nfs::Message& message) {
   try {
-    PmidRecord pmid_record(pmid_account_handler_.GetPmidRecord(PmidName(message.data().name)));
-    if (!pmid_record.pmid_name.data.string().empty()) {
-      nfs::Reply reply(CommonErrors::success, pmid_record.Serialise());
+    PmidManagerMetadata metadata(pmid_account_handler_.GetMetadata(PmidName(message.data().name)));
+    if (!metadata.pmid_name.data.string().empty()) {
+      nfs::Reply reply(CommonErrors::success, metadata.Serialise());
       nfs_.ReturnPmidTotals(message.source().node_id, reply.Serialise());
     } else {
       nfs_.ReturnFailure(message);
@@ -127,12 +128,11 @@ void PmidManagerService::GetPmidAccount(const nfs::Message& message) {
   }
 }
 
-void PmidManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
+void PmidManagerService::HandleChurnEvent(std::shared_ptr<routing::MatrixChange> matrix_change) {
   auto account_names(pmid_account_handler_.GetAccountNames());
   auto itr(std::begin(account_names));
   while (itr != std::end(account_names)) {
-    auto check_holders_result(CheckHolders(matrix_change, routing_.kNodeId(),
-                                           NodeId((*itr)->string())));
+    auto check_holders_result(matrix_change->CheckHolders(NodeId((*itr)->string())));
     // Delete accounts for which this node is no longer responsible.
     if (check_holders_result.proximity_status != routing::GroupRangeStatus::kInRange) {
       pmid_account_handler_.DeleteAccount(*itr);

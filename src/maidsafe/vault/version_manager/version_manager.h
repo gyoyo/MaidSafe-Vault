@@ -1,3 +1,5 @@
+
+
 /* Copyright 2013 MaidSafe.net limited
 
 This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
@@ -17,37 +19,46 @@ License.
 #define MAIDSAFE_VAULT_VERSION_MANAGER_VERSION_MANAGER_H_
 
 #include <cstdint>
-#include <utility>
 
-#include "maidsafe/common/types.h"
 #include "maidsafe/data_types/structured_data_versions.h"
 #include "maidsafe/nfs/types.h"
-#include "maidsafe/vault/unresolved_element.h"
-#include "maidsafe/vault/db_key.h"
+
+#include "maidsafe/vault/unresolved_action.h"
 #include "maidsafe/vault/version_manager/key.h"
-#include "maidsafe/vault/version_manager/unresolved_entry_value.h"
+
 
 namespace maidsafe {
+
+namespace vault {
+
+struct ActionPutVersion;
+struct ActionGetVersion;
+struct ActionGetBranch;
+struct ActionDeleteBranchUntilFork;
+
+}  // namespace vault
+
 
 namespace nfs {
 
 template<>
 struct PersonaTypes<Persona::kVersionManager> {
-  typedef DataNameVariant RecordName;
-  typedef ::maidsafe::vault::VersionManagerKey DbKey;
-  typedef StructuredDataVersions DbValue;
-  typedef std::pair<DbKey, MessageAction> UnresolvedEntryKey;
-  typedef ::maidsafe::vault::VersionManagerUnresolvedEntryValue UnresolvedEntryValue;
   static const Persona persona = Persona::kVersionManager;
+  typedef vault::VersionManagerKey Key;
+  typedef StructuredDataVersions Value;
+  typedef vault::UnresolvedAction<Key, vault::ActionPutVersion> UnresolvedPutVersion;
+  typedef vault::UnresolvedAction<Key, vault::ActionGetVersion> UnresolvedGetVersion;
+  typedef vault::UnresolvedAction<Key, vault::ActionGetBranch> UnresolvedGetBranch;
+  typedef vault::UnresolvedAction<Key, vault::ActionDeleteBranchUntilFork>
+      UnresolvedDeleteBranchUntilFork;
 };
 
 }  // namespace nfs
 
+
 namespace vault {
 
 typedef nfs::PersonaTypes<nfs::Persona::kVersionManager> VersionManager;
-typedef UnresolvedElement<VersionManager> VersionManagerUnresolvedEntry;
-typedef VersionManagerUnresolvedEntry VersionManagerResolvedEntry;
 
 }  // namespace vault
 

@@ -18,51 +18,49 @@ License.
 
 #include <string>
 
-#include "maidsafe/data_types/data_name_variant.h"
-#include "maidsafe/nfs/persona_id.h"
-#include "maidsafe/nfs/types.h"
+#include "maidsafe/common/bounded_string.h"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/data_types/data_type_values.h"
+
+#include "maidsafe/vault/key_utils.h"
 
 
 namespace maidsafe {
 
 namespace vault {
 
-class Db;
-template<typename PersonaType>
-class ManagerDb;
-
-class VersionManagerKey {
- public:
-  VersionManagerKey();
-  VersionManagerKey(const DataNameVariant& data_name, const Identity& originator);
+struct VersionManagerKey {
+  template<typename Data>
+  VersionManagerKey(const typename Data::name_type& name_in, const Identity& originator_in)
+      : name(name_in.data),
+        type(Data::type_enum_value()),
+        originator(originator_in) {}
+  explicit VersionManagerKey(const std::string& serialised_key);
   VersionManagerKey(const VersionManagerKey& other);
   VersionManagerKey(VersionManagerKey&& other);
   VersionManagerKey& operator=(VersionManagerKey other);
+  std::string Serialise() const;
 
-  DataNameVariant data_name() const { return data_name_; }
-  Identity originator() const { return originator_; }
-
-  friend void swap(VersionManagerKey& lhs, VersionManagerKey& rhs) MAIDSAFE_NOEXCEPT;
-  friend bool operator==(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
-  friend bool operator<(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
-  friend class Db;
-  template<typename PersonaType>
-  friend class ManagerDb;
+  Identity name;
+  DataTagValue type;
+  Identity originator;
 
  private:
-  explicit VersionManagerKey(const std::string& serialised_key);
-  std::string Serialise() const;
-  DataNameVariant data_name_;
-  Identity originator_;
-  static const int kPaddedWidth_;
+  typedef maidsafe::detail::BoundedString<
+      NodeId::kSize + detail::PaddedWidth::value,
+      NodeId::kSize + detail::PaddedWidth::value> FixedWidthString;
+
+  explicit VersionManagerKey(const FixedWidthString& fixed_width_string);
+  FixedWidthString ToFixedWidthString() const;
 };
 
+void swap(VersionManagerKey& lhs, VersionManagerKey& rhs) MAIDSAFE_NOEXCEPT;
+bool operator==(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
 bool operator!=(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
-
+bool operator<(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
 bool operator>(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
-
 bool operator<=(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
-
 bool operator>=(const VersionManagerKey& lhs, const VersionManagerKey& rhs);
 
 }  // namespace vault

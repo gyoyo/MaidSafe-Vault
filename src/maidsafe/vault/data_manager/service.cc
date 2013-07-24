@@ -61,13 +61,12 @@ const int DataManagerService::kDeleteRequestsRequired_(3);
 
 DataManagerService::DataManagerService(const passport::Pmid& pmid,
                                                routing::Routing& routing,
-                                               nfs::PublicKeyGetter& public_key_getter,
-                                               const boost::filesystem::path& vault_root_dir)
+                                               nfs::PublicKeyGetter& public_key_getter)
     : routing_(routing),
       public_key_getter_(public_key_getter),
       accumulator_mutex_(),
       accumulator_(),
-      metadata_handler_(vault_root_dir, routing.kNodeId()),
+      metadata_handler_(routing.kNodeId()),
       nfs_(routing, pmid) {}
 
 void DataManagerService::ValidatePutSender(const nfs::Message& message) const {
@@ -172,14 +171,13 @@ void DataManagerService::HandleRecordTransfer(const nfs::Message& message) {
 }
 
 // =============== Churn ===========================================================================
-void DataManagerService::HandleChurnEvent(routing::MatrixChange matrix_change) {
+void DataManagerService::HandleChurnEvent(std::shared_ptr<routing::MatrixChange> matrix_change) {
   auto record_names(metadata_handler_.GetRecordNames());
   auto itr(std::begin(record_names));
   auto name(itr->name());
   while (itr != std::end(record_names)) {
     auto result(boost::apply_visitor(GetTagValueAndIdentityVisitor(), name));
-    auto check_holders_result(CheckHolders(matrix_change, routing_.kNodeId(),
-                                           NodeId(result.second)));
+    auto check_holders_result(matrix_change->(NodeId(result.second)));
     // Delete records for which this node is no longer responsible.
     if (check_holders_result.proximity_status != routing::GroupRangeStatus::kInRange) {
       metadata_handler_.DeleteRecord(itr->name());

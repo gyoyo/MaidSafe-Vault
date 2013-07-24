@@ -16,36 +16,47 @@ License.
 #ifndef MAIDSAFE_VAULT_DATA_MANAGER_DATA_MANAGER_H_
 #define MAIDSAFE_VAULT_DATA_MANAGER_DATA_MANAGER_H_
 
-#include <cstdint>
-#include <utility>
-
-#include "maidsafe/common/types.h"
 #include "maidsafe/nfs/types.h"
-#include "maidsafe/vault/db_key.h"
+
+#include "maidsafe/vault/key.h"
+#include "maidsafe/vault/unresolved_action.h"
 #include "maidsafe/vault/data_manager/value.h"
-#include "maidsafe/vault/unresolved_element.h"
+
 
 namespace maidsafe {
+
+namespace vault {
+
+struct ActionDataManagerPut;
+struct ActionDataManagerGet;
+struct ActionDataManagerDelete;
+struct ActionNodeDown;
+struct ActionNodeUp;
+
+}  // namespace vault
+
 
 namespace nfs {
 
 template<>
 struct PersonaTypes<Persona::kDataManager> {
-  typedef ::maidsafe::vault::DbKey RecordName;
-  typedef ::maidsafe::vault::DbKey DbKey;
-  typedef ::maidsafe::vault::DataManagerValue DbValue;
-  typedef std::pair<vault::DbKey, MessageAction> UnresolvedEntryKey;
-  typedef DbValue UnresolvedEntryValue;
   static const Persona persona = Persona::kDataManager;
+  typedef vault::Key Key;
+  typedef vault::DataManagerValue Value;
+  typedef vault::UnresolvedAction<Key, vault::ActionDataManagerPut> UnresolvedPut;
+  typedef vault::UnresolvedAction<Key, vault::ActionDataManagerGet> UnresolvedGet;
+  typedef vault::UnresolvedAction<Key, vault::ActionDataManagerDelete> UnresolvedDelete;
+  typedef vault::UnresolvedAction<Key, vault::ActionNodeDown> UnresolvedNodeDown;
+  typedef vault::UnresolvedAction<Key, vault::ActionNodeUp> UnresolvedNodeUp;
 };
 
 }  // namespace nfs
 
+
 namespace vault {
 
 typedef nfs::PersonaTypes<nfs::Persona::kDataManager> DataManager;
-typedef UnresolvedElement<DataManager> DataManagerUnresolvedEntry;
-typedef DataManagerUnresolvedEntry DataManagerResolvedEntry;
+
 }  // namespace vault
 
 }  // namespace maidsafe

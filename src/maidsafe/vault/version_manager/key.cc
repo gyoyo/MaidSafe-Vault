@@ -15,65 +15,77 @@ License.
 
 #include "maidsafe/vault/version_manager/key.h"
 
-#include <algorithm>
 #include <tuple>
 
-#include "maidsafe/vault/utils.h"
+#include "maidsafe/common/error.h"
+
+#include "maidsafe/vault/version_manager/key.pb.h"
 
 
 namespace maidsafe {
 
 namespace vault {
 
-const int VersionManagerKey::kPaddedWidth_(1);
-
-VersionManagerKey::VersionManagerKey() : data_name_(), originator_() {}
-
-VersionManagerKey::VersionManagerKey(const DataNameVariant& data_name,
-                                     const Identity& originator)
-    : data_name_(data_name),
-      originator_(originator) {}
-
 VersionManagerKey::VersionManagerKey(const std::string& serialised_key)
-    : data_name_(),
-      originator_() {
-  std::string name(serialised_key.substr(0, NodeId::kSize));
-  std::string type_as_string(serialised_key.substr(NodeId::kSize, kPaddedWidth_));
-  auto type(static_cast<DataTagValue>(detail::FromFixedWidthString<kPaddedWidth_>(type_as_string)));
-  data_name_ = GetDataNameVariant(type, Identity(name));
-  originator_ = Identity(serialised_key.substr(NodeId::kSize + kPaddedWidth_));
+    : name(),
+      type(DataTagValue::kOwnerDirectoryValue),
+      originator() {
+  protobuf::VersionManagerKey key_proto;
+  if (!key_proto.ParseFromString(serialised_key))
+    ThrowError(CommonErrors::parsing_error);
+  name = Identity(key_proto.name());
+  type = static_cast<DataTagValue>(key_proto.type());
+  originator = Identity(key_proto.originator());
 }
 
+VersionManagerKey::VersionManagerKey(const FixedWidthString& fixed_width_string)
+    : name(fixed_width_string.string().substr(0, NodeId::kSize)),
+      type(static_cast<DataTagValue>(
+               detail::FromFixedWidthString<detail::PaddedWidth::value>(
+                   fixed_width_string.string().substr(NodeId::kSize, detail::PaddedWidth::value)))),
+      originator(fixed_width_string.string().substr(NodeId::kSize + detail::PaddedWidth::value)) {}
+
 VersionManagerKey::VersionManagerKey(const VersionManagerKey& other)
-    : data_name_(other.data_name_),
-      originator_(other.originator_) {}
+    : name(other.name),
+      type(other.type),
+      originator(other.originator) {}
+
+VersionManagerKey::VersionManagerKey(VersionManagerKey&& other)
+    : name(std::move(other.name)),
+      type(std::move(other.type)),
+      originator(std::move(other.originator)) {}
 
 VersionManagerKey& VersionManagerKey::operator=(VersionManagerKey other) {
   swap(*this, other);
   return *this;
 }
 
-VersionManagerKey::VersionManagerKey(VersionManagerKey&& other)
-    : data_name_(std::move(other.data_name_)),
-      originator_(std::move(other.originator_)) {}
+std::string VersionManagerKey::Serialise() const {
+  protobuf::VersionManagerKey key_proto;
+  key_proto.set_name(name.string());
+  key_proto.set_type(static_cast<int32_t>(type));
+  key_proto.set_originator(originator.string());
+  return key_proto.SerializeAsString();
+}
+
+VersionManagerKey::FixedWidthString VersionManagerKey::ToFixedWidthString() const {
+  return FixedWidthString(
+      name.string() +
+      detail::ToFixedWidthString<detail::PaddedWidth::value>(static_cast<uint32_t>(type)) +
+      originator.string());
+}
 
 void swap(VersionManagerKey& lhs, VersionManagerKey& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
-  swap(lhs.data_name_, rhs.data_name_);
-  swap(lhs.originator_, rhs.originator_);
-}
-
-std::string VersionManagerKey::Serialise() const {
-  static GetTagValueAndIdentityVisitor visitor;
-  auto result(boost::apply_visitor(visitor, data_name_));
-  return std::string(
-      result.second.string() +
-      detail::ToFixedWidthString<kPaddedWidth_>(static_cast<uint32_t>(result.first)) +
-      originator_.string());
+  swap(lhs.name, rhs.name);
+  swap(lhs.type, rhs.type);
+  swap(lhs.originator, rhs.originator);
 }
 
 bool operator==(const VersionManagerKey& lhs, const VersionManagerKey& rhs) {
-  return std::tie(lhs.data_name_, lhs.originator_) == std::tie(rhs.data_name_, rhs.originator_);
+  return lhs.name == rhs.name &&
+         lhs.type == rhs.type &&
+         lhs.originator == rhs.originator;
 }
 
 bool operator!=(const VersionManagerKey& lhs, const VersionManagerKey& rhs) {
@@ -81,7 +93,8 @@ bool operator!=(const VersionManagerKey& lhs, const VersionManagerKey& rhs) {
 }
 
 bool operator<(const VersionManagerKey& lhs, const VersionManagerKey& rhs) {
-  return std::tie(lhs.data_name_, lhs.originator_) < std::tie(rhs.data_name_, rhs.originator_);
+  return std::tie(lhs.name, lhs.type, lhs.originator) <
+         std::tie(rhs.name, rhs.type, rhs.originator);
 }
 
 bool operator>(const VersionManagerKey& lhs, const VersionManagerKey& rhs) {

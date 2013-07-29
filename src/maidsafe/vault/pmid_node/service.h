@@ -29,6 +29,7 @@ License.
 #include "maidsafe/data_store/data_store.h"
 #include "maidsafe/data_store/memory_buffer.h"
 #include "maidsafe/data_store/permanent_store.h"
+#include "maidsafe/data_types/data_type_values.h"
 #include "maidsafe/nfs/nfs.h"
 #include "maidsafe/nfs/message.h"
 #include "maidsafe/nfs/message.h"
@@ -36,6 +37,8 @@ License.
 
 #include "maidsafe/vault/accumulator.h"
 #include "maidsafe/vault/types.h"
+#include "maidsafe/vault/post_policies.h"
+#include "maidsafe/vault/pmid_manager/pmid_manager.pb.h"
 
 
 namespace maidsafe {
@@ -56,8 +59,8 @@ class PmidNodeService {
   enum : uint32_t { kPutRequestsRequired = 3, kDeleteRequestsRequired = 3 };
 
   PmidNodeService(const passport::Pmid& pmid,
-                    routing::Routing& routing,
-                    const boost::filesystem::path& vault_root_dir);
+                  routing::Routing& routing,
+                  const boost::filesystem::path& vault_root_dir);
 
   template<typename Data>
   void HandleMessage(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
@@ -80,6 +83,22 @@ class PmidNodeService {
   void HandleGetMessage(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
   template<typename Data>
   void HandleDeleteMessage(const nfs::Message& message, const routing::ReplyFunctor& reply_functor);
+
+  void SendAccountRequest();
+
+  // populates chunks map
+  void ApplyAccountTransfer(const size_t& total_pmidmgrs,
+                            const size_t& pmidmagsr_with_account,
+                            std::map<DataNameVariant, uint16_t>& chunks);
+  void UpdateLocalStorage(const std::map<DataNameVariant, uint16_t>& expected_files);
+  void ApplyUpdateLocalStorage(const std::vector<DataNameVariant>& to_be_deleted,
+                               const std::vector<DataNameVariant>& to_be_retrieved);
+  std::vector<DataNameVariant> StoredFileNames();
+  uint16_t TotalValidPmidAccountReplies(
+      std::shared_ptr<std::vector<protobuf::PmidAccountResponse>> response_vector) const;
+
+  std::future<std::unique_ptr<ImmutableData>>
+  RetrieveFileFromNetwork(const DataNameVariant &file_id);
 
   void ValidatePutSender(const nfs::Message& message) const;
   void ValidateGetSender(const nfs::Message& message) const;
@@ -117,6 +136,7 @@ class PmidNodeService {
   routing::Routing& routing_;
   std::mutex accumulator_mutex_;
   Accumulator<DataNameVariant> accumulator_;
+  PmidNodeMiscellaneousPolicy miscellaneous_policy;
   PmidNodeNfs nfs_;
 };
 

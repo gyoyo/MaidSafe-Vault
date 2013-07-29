@@ -13,28 +13,34 @@ implied. See the License for the specific language governing permissions and lim
 License.
 */
 
-#include "maidsafe/vault/maid_manager/action_delete.h"
+#ifndef MAIDSAFE_VAULT_MAID_MANAGER_ACTION_CREATE_REMOVE_ACCOUNT_H_
+#define MAIDSAFE_VAULT_MAID_MANAGER_ACTION_CREATE_REMOVE_ACCOUNT_H_
 
-#include "maidsafe/vault/maid_manager/metadata.h"
-#include "maidsafe/vault/maid_manager/value.h"
+#include "maidsafe/nfs/types.h"
 
 
 namespace maidsafe {
 
 namespace vault {
 
-const nfs::MessageAction ActionMaidManagerDelete::kActionId;
+template<bool Remove>
+struct ActionCreateRemoveAccount {
+  static const nfs::MessageAction kActionId;
+};
 
-void ActionMaidManagerDelete::operator()(MaidManagerMetadata& metadata,
-                                         boost::optional<MaidManagerValue>& value) const {
-  if (!value)
-    return;
-  auto deleted_cost(value->Delete());
-  if (value->count() == 0)
-    value.reset();
-  metadata.DeleteData(deleted_cost);
-}
+template<>
+const nfs::MessageAction ActionCreateRemoveAccount<false>::kActionId =
+    nfs::MessageAction::kCreateAccount;
+
+template<>
+const nfs::MessageAction ActionCreateRemoveAccount<true>::kActionId =
+    nfs::MessageAction::kRemoveAccount;
+
+typedef ActionCreateRemoveAccount<false> ActionCreateAccount;
+typedef ActionCreateRemoveAccount<true> ActionRemoveAccount;
 
 }  // namespace vault
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_VAULT_MAID_MANAGER_ACTION_CREATE_REMOVE_ACCOUNT_H_

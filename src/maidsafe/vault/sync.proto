@@ -16,7 +16,6 @@ License.
 package maidsafe.vault.protobuf;
 
 message Sync {
-  optional int32 account_type = 1;
-  required bytes account_name = 2;
-  required bytes serialised_unresolved_entries = 3;
+  required int32 action_type = 1;
+  required bytes serialised_unresolved_action = 2;
 }

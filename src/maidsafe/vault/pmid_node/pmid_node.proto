@@ -15,12 +15,7 @@ License.
 
 package maidsafe.vault.protobuf;
 
-// MPID Account Holder to Metadata Manager
-// MPID Account Holder to MPID ??
-message NodeDown {
-  required bytes node_id = 1;
+message PmidAccountRequest {
+  required bytes pmid_name = 1;
 }
 
-message NodeUp {
-  required bytes node_id = 1;
-}

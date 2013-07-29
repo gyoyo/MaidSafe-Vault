@@ -25,29 +25,22 @@ namespace maidsafe {
 
 namespace vault {
 
-template<>
-const nfs::MessageAction ActionRegisterUnregisterPmid<false>::kActionId =
-    nfs::MessageAction::kRegisterPmid;
+//template<>
+//const nfs::MessageAction ActionRegisterUnregisterPmid<false>::kActionId =
+//    nfs::MessageAction::kRegisterPmid;
+//
+//template<>
+//const nfs::MessageAction ActionRegisterUnregisterPmid<true>::kActionId =
+//    nfs::MessageAction::kUnregisterPmid;
 
 template<>
-const nfs::MessageAction ActionRegisterUnregisterPmid<true>::kActionId =
-    nfs::MessageAction::kUnregisterPmid;
-
-template<>
-void ActionRegisterUnregisterPmid<false>::operator()(
-    boost::optional<MaidManagerMetadata>& value) const {
-  if (!value)
-    ThrowError(VaultErrors::no_such_account);
-  value->RegisterPmid(kPmidRegistration);
+void ActionRegisterUnregisterPmid<false>::operator()(MaidManagerMetadata& metadata) const {
+  metadata.RegisterPmid(kPmidRegistration);
 }
 
-
 template<>
-void ActionRegisterUnregisterPmid<true>::operator()(
-    boost::optional<MaidManagerMetadata>& value) const {
-  if (!value)
-    ThrowError(VaultErrors::no_such_account);
-  value->UnregisterPmid(kPmidRegistration);
+void ActionRegisterUnregisterPmid<true>::operator()(MaidManagerMetadata& metadata) const {
+  metadata.UnregisterPmid(kPmidRegistration);
 }
 
 }  // namespace vault

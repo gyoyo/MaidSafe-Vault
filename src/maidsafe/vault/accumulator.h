@@ -40,6 +40,7 @@ class AccumulatorTest_BEH_SetHandled_Test;
 class AccumulatorTest_BEH_FindHandled_Test;
 }  // namespace test
 
+
 template<typename Name>
 class Accumulator {
  public:

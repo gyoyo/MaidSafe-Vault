@@ -36,7 +36,7 @@ namespace vault {
 
 namespace detail {
 
-enum class DataType : int32_t { kMetadata };
+enum class DataType : int32_t { kMetadata = 10000 };
 
 }  // namespace detail
 
@@ -67,13 +67,11 @@ typedef nfs::NetworkFileSystem<
     nfs::PmidManagerDeletePolicy,
     PmidManagerPostPolicy> PmidManagerNfs;
 
-// TODO(dirvine) BEFORE_RELEASE this is a hack to create a type for the dataholder, the proper
-// implmentation is required ,,,,,,,,,,,,,,,,,,,,,
 typedef nfs::NetworkFileSystem<
-    nfs::PmidManagerPutPolicy,
-    nfs::PmidManagerGetPolicy,
-    nfs::PmidManagerDeletePolicy,
-    PmidManagerPostPolicy> PmidNodeNfs;
+    nfs::PmidNodePutPolicy,
+    nfs::PmidNodeGetPolicy,
+    nfs::PmidNodeDeletePolicy,
+    PmidNodePostPolicy> PmidNodeNfs;
 
 typedef passport::PublicMaid::name_type MaidName;
 typedef passport::PublicPmid::name_type PmidName;

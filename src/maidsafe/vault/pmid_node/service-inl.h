@@ -22,6 +22,7 @@ License.
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/vault/utils.h"
+#include "maidsafe/vault/pmid_manager/pmid_manager.pb.h"
 
 
 namespace maidsafe {
@@ -56,7 +57,7 @@ void PmidNodeService::HandleMessage(const nfs::Message& message,
 
 template<typename Data>
 void PmidNodeService::HandlePutMessage(const nfs::Message& message,
-                                         const routing::ReplyFunctor& reply_functor) {
+                                       const routing::ReplyFunctor& reply_functor) {
   try {
 #ifndef TESTING
     ValidatePutSender(message);
@@ -80,7 +81,7 @@ void PmidNodeService::HandlePutMessage(const nfs::Message& message,
 
 template<typename Data>
 void PmidNodeService::HandleGetMessage(const nfs::Message& message,
-                                         const routing::ReplyFunctor& reply_functor) {
+                                       const routing::ReplyFunctor& reply_functor) {
   try {
 #ifndef TESTING
     ValidateGetSender(message);
@@ -96,7 +97,7 @@ void PmidNodeService::HandleGetMessage(const nfs::Message& message,
 
 template<typename Data>
 void PmidNodeService::HandleDeleteMessage(const nfs::Message& message,
-                                            const routing::ReplyFunctor& reply_functor) {
+                                          const routing::ReplyFunctor& reply_functor) {
   try {
 #ifndef TESTING
     ValidateDeleteSender(message);
@@ -116,6 +117,7 @@ void PmidNodeService::HandleDeleteMessage(const nfs::Message& message,
   }
 }
 
+
 template<typename Data>
 NonEmptyString PmidNodeService::GetFromCache(const nfs::Message& message) {
   return GetFromCache<Data>(message, is_cacheable<Data>());
@@ -128,14 +130,13 @@ NonEmptyString PmidNodeService::GetFromCache(const nfs::Message& message, IsCach
 }
 
 template<typename Data>
-NonEmptyString PmidNodeService::GetFromCache(const nfs::Message& /*message*/,
-                                               IsNotCacheable) {
+NonEmptyString PmidNodeService::GetFromCache(const nfs::Message& /*message*/, IsNotCacheable) {
   return NonEmptyString();
 }
 
 template<typename Data>
 NonEmptyString PmidNodeService::CacheGet(const typename Data::name_type& name,
-                                           IsShortTermCacheable) {
+                                         IsShortTermCacheable) {
   static_assert(is_short_term_cacheable<Data>::value,
                 "This should only be called for short-term cacheable data types.");
   return mem_only_cache_.Get(name);
@@ -143,7 +144,7 @@ NonEmptyString PmidNodeService::CacheGet(const typename Data::name_type& name,
 
 template<typename Data>
 NonEmptyString PmidNodeService::CacheGet(const typename Data::name_type& name,
-                                           IsLongTermCacheable) {
+                                         IsLongTermCacheable) {
   static_assert(is_long_term_cacheable<Data>::value,
                 "This should only be called for long-term cacheable data types.");
   return cache_data_store_.Get(name);
